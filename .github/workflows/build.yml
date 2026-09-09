@@ -1,0 +1,33 @@
+name: Build TOCO
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # These settings exist only for on-device proot builds and would
+      # break or slow down CI.
+      - name: Strip on-device tuning
+        run: |
+          sed -i '/org.gradle.java.home/d' gradle.properties
+          sed -i '/org.gradle.workers.max/d' gradle.properties
+          sed -i '/org.gradle.jvmargs/d' gradle.properties
+
+      - run: chmod +x gradlew
+
+      - run: ./gradlew assembleDebug --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: toco-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk

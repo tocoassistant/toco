@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screen_padding">20dp</dimen>
+    <dimen name="orb_size">210dp</dimen>
+    <dimen name="avatar_size">42dp</dimen>
+    <dimen name="icon_size">22dp</dimen>
+    <dimen name="nav_icon_size">20dp</dimen>
+    <dimen name="home_button_size">58dp</dimen>
+    <dimen name="command_bar_radius">28dp</dimen>
+    <dimen name="nav_ring_size">40dp</dimen>
+    <dimen name="nav_lift">12dp</dimen>
+</resources>

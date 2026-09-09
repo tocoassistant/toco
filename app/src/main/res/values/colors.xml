@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base -->
+    <color name="bg">#0A0A0F</color>
+    <color name="surface">#14121C</color>
+    <color name="surface_alt">#1A1628</color>
+    <color name="surface_raised">#1E1830</color>
+    <color name="avatar">#2A2240</color>
+
+    <!-- Borders -->
+    <color name="border">#2A2438</color>
+    <color name="border_alt">#2E2845</color>
+
+    <!-- Accent -->
+    <color name="accent">#9B7CFF</color>
+    <color name="accent_light">#D4C4FF</color>
+    <color name="accent_dark">#5B3FA0</color>
+    <color name="accent_core">#F5EFFF</color>
+
+    <!-- Text -->
+    <color name="text_primary">#F0E6FF</color>
+    <color name="text_secondary">#8A7CA8</color>
+    <color name="text_hint">#6B5F8A</color>
+    <color name="text_logo">#E8DEFF</color>
+
+    <!-- Capability status -->
+    <color name="status_ok">#7BE0A8</color>
+    <color name="status_warn">#E0C07B</color>
+    <color name="status_off">#8A7CA8</color>
+</resources>

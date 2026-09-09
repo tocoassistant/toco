@@ -1,0 +1,106 @@
+[
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/layout_activity_main.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/layout_fragment_simple.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/layout/fragment_simple.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_bg_ring.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/bg_ring.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/layout_item_model.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/layout/item_model.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_bg_nav_ring.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/bg_nav_ring.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/drawable_bg_nav_ring.xml.flat",
+        "source": "com.toco.ai.app-main-31:/drawable/bg_nav_ring.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_fragment_access.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/fragment_access.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/layout_fragment_home.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/layout/fragment_home.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_item_capability.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/item_capability.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_item_model.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/item_model.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_bg_avatar.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/bg_avatar.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/layout_activity_splash.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/layout/activity_splash.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/mipmap-anydpi_ic_launcher.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/mipmap-anydpi/ic_launcher.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/layout_fragment_models.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/layout/fragment_models.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_fragment_home.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/fragment_home.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_bg_command_bar.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/bg_command_bar.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_bg_glow.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/bg_glow.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_view_nav_item.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/view_nav_item.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_fragment_models.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/fragment_models.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_bg_status_badge.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/bg_status_badge.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/drawable_dot_online.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/drawable/dot_online.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_activity_main.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-merged_res-29:/layout_view_nav_item.xml.flat",
+        "source": "/home/test/.gradle/daemon/8.7/com.toco.ai.app-main-31:/layout/view_nav_item.xml"
+    },
+    {
+        "merged": "com.toco.ai.app-merged_res-29:/layout_fragment_simple.xml.flat",
+        "source": "com.toco.ai.app-main-31:/layout/fragment_simple.xml"
+    }
+]

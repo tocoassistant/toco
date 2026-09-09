@@ -1,0 +1,44 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.7/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: The option setting 'android.aapt2FromMavenOverride=/usr/bin/aapt2' is experimental.
+The message received from the daemon indicates that the daemon has disappeared.
+Build request sent: Build{id=4d9a6b50-e471-4cdb-a710-5d6c1b1cd6d2, currentDir=/storage/internal_new/project/TOCO}
+Attempting to read last messages from the daemon log...
+Daemon pid: 28390
+  log file: /home/test/.gradle/daemon/8.7/daemon-28390.out.log
+----- Last  20 lines from daemon log file - daemon-28390.out.log -----
+2026-09-09T03:37:57.051+0000 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on daemon addresses registry.
+2026-09-09T03:37:57.053+0000 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-09-09T03:37:57.057+0000 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-09-09T03:37:57.058+0000 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] resetting idle timer
+2026-09-09T03:37:57.059+0000 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon is running. Sleeping until state changes.
+2026-09-09T03:37:57.062+0000 [INFO] [org.gradle.launcher.daemon.server.exec.StartBuildOrRespondWithBusy] Daemon is about to start building Build{id=4d9a6b50-e471-4cdb-a710-5d6c1b1cd6d2, currentDir=/storage/internal_new/project/TOCO}. Dispatching build started information...
+2026-09-09T03:37:57.064+0000 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 23: dispatching org.gradle.launcher.daemon.protocol.BuildStarted@3e2b4f47
+2026-09-09T03:37:57.075+0000 [DEBUG] [org.gradle.launcher.daemon.server.exec.EstablishBuildEnvironment] Configuring env variables: [PATH, LESSCLOSE, SHELL, LESSOPEN, JAVA_HOME, SSH_TTY, SSH_CLIENT, TERM, OLDPWD, USER, CLASSPATH, ANDROID_HOME, JRE_HOME, SSH_CONNECTION, LIBGL_ALWAYS_SOFTWARE, LOGNAME, PWD, LS_COLORS, HOME, SHLVL, _]
+2026-09-09T03:37:57.076+0000 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 21: received class org.gradle.launcher.daemon.protocol.ForwardInput
+2026-09-09T03:37:57.077+0000 [DEBUG] [org.gradle.launcher.daemon.server.DefaultDaemonConnection] thread 21: Received IO message from client: org.gradle.launcher.daemon.protocol.ForwardInput@1a54f5c
+2026-09-09T03:37:57.083+0000 [DEBUG] [org.gradle.launcher.daemon.server.exec.LogToClient] About to start relaying all logs to the client via the connection.
+2026-09-09T03:37:57.084+0000 [INFO] [org.gradle.launcher.daemon.server.exec.LogToClient] The client will now receive all logging from the daemon (pid: 28390). The daemon log file: /home/test/.gradle/daemon/8.7/daemon-28390.out.log
+2026-09-09T03:37:57.089+0000 [DEBUG] [org.gradle.launcher.daemon.server.exec.ForwardClientInput] Writing forwarded input on daemon's stdin.
+2026-09-09T03:37:57.090+0000 [DEBUG] [org.gradle.launcher.daemon.server.exec.RequestStopIfSingleUsedDaemon] Requesting daemon stop after processing Build{id=4d9a6b50-e471-4cdb-a710-5d6c1b1cd6d2, currentDir=/storage/internal_new/project/TOCO}
+2026-09-09T03:37:57.091+0000 [LIFECYCLE] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Daemon will be stopped at the end of the build 
+2026-09-09T03:37:57.092+0000 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Stop as soon as idle requested. The daemon is busy: true
+2026-09-09T03:37:57.093+0000 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon stop has been requested. Sleeping until state changes.
+2026-09-09T03:37:57.094+0000 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has started executing the build.
+2026-09-09T03:37:57.095+0000 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] Executing build with daemon context: DefaultDaemonContext[uid=54093566-9840-4e1d-b55b-bfb9ed306f76,javaHome=/opt/java/jdk-17.0.20+8,daemonRegistryDir=/home/test/.gradle/daemon,pid=28390,idleTimeout=120000,priority=NORMAL,applyInstrumentationAgent=true,daemonOpts=-XX:MaxMetaspaceSize=384m,--add-opens=java.base/java.util=ALL-UNNAMED,--add-opens=java.base/java.lang=ALL-UNNAMED,--add-opens=java.base/java.lang.invoke=ALL-UNNAMED,--add-opens=java.prefs/java.util.prefs=ALL-UNNAMED,--add-opens=java.base/java.nio.charset=ALL-UNNAMED,--add-opens=java.base/java.net=ALL-UNNAMED,--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED,-Xmx1280m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]
+WARNING: The option setting 'android.aapt2FromMavenOverride=/usr/bin/aapt2' is experimental.
+----- End of the daemon log -----
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Gradle build daemon disappeared unexpectedly (it may have been killed or may have crashed)
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
