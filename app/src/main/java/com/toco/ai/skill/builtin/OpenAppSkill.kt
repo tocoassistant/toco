@@ -14,6 +14,9 @@ class OpenAppSkill : Skill {
 
     private val triggers = listOf("open ", "launch ", "start ", "run ")
 
+    // Above media so "open play store" opens the app.
+    override val priority = 55
+
     override fun canHandle(command: String): Boolean {
         val c = command.lowercase().trim()
         return triggers.any { c.startsWith(it) }

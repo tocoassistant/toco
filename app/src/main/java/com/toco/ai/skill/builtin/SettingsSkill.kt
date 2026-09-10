@@ -44,19 +44,32 @@ class SettingsSkill : Skill {
         Target(listOf("developer"), "android.settings.APPLICATION_DEVELOPMENT_SETTINGS", "Developer options")
     )
 
+    override val priority = 75
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase()
-        val mentionsSettings = c.contains("setting") || c.contains("open") ||
-            c.contains("turn on") || c.contains("turn off") || c.contains("enable") ||
-            c.contains("disable") || c.contains("take me to")
-        if (!mentionsSettings) return false
-        return targets.any { t -> t.keywords.any { c.contains(it) } } ||
-            c.trim() == "settings" || c.contains("android settings")
+        val normalized = com.toco.ai.util.CommandText.normalize(command)
+
+        // "settings" on its own, or "<thing> settings".
+        if (normalized == "settings" || normalized == "open settings") return true
+
+        val named = targets.any { t ->
+            t.keywords.any { com.toco.ai.util.CommandText.hasPhrase(command, it) }
+        }
+        if (!named) return false
+
+        // Only claim it if the user is actually asking to go there or toggle it,
+        // otherwise "battery" alone belongs to the device-info skill.
+        return com.toco.ai.util.CommandText.hasPhrase(command, "settings") ||
+            com.toco.ai.util.CommandText.startsWithVerb(
+                command, listOf("open", "turn", "enable", "disable", "set")
+            )
     }
 
     override fun execute(context: Context, command: String): SkillResult {
-        val c = command.lowercase()
-        val target = targets.firstOrNull { t -> t.keywords.any { c.contains(it) } }
+        val c = com.toco.ai.util.CommandText.normalize(command)
+        val target = targets.firstOrNull { t ->
+            t.keywords.any { com.toco.ai.util.CommandText.hasPhrase(command, it) }
+        }
 
         val action = target?.action ?: Settings.ACTION_SETTINGS
         val label = target?.label ?: "Settings"

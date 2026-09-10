@@ -8,6 +8,7 @@ import com.toco.ai.core.Prefs
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
 import com.toco.ai.util.AppFinder
+import com.toco.ai.util.CommandText
 import com.toco.ai.util.Contacts
 import com.toco.ai.util.Permissions
 import com.toco.ai.util.PhoneNumbers
@@ -28,11 +29,12 @@ class WhatsAppSkill : Skill {
     private val packageName = "com.whatsapp"
     private val triggers = listOf("whatsapp", "wa", "message", "msg", "text")
 
+    override val priority = 90
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase().trim()
-        if (c.contains("whatsapp")) return true
-        // "message mom saying hi" counts only if no other app was named.
-        return triggers.any { c.startsWith("$it ") } && !c.contains("imo")
+        if (CommandText.hasPhrase(command, "imo")) return false
+        if (CommandText.hasPhrase(command, "whatsapp")) return true
+        return CommandText.startsWithVerb(command, listOf("message", "msg", "text"))
     }
 
     override fun execute(context: Context, command: String): SkillResult {

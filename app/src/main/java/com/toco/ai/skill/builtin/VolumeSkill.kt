@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioManager
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
+import com.toco.ai.util.CommandText
 
 /**
  * "volume up", "increase volume", "mute", "volume 50"
@@ -17,18 +18,25 @@ class VolumeSkill : Skill {
     override val id = "core.volume"
     override val name = "Volume"
 
+    override val priority = 60
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase()
-        if (c.contains("volume") || c.contains("sound level")) return true
-        return c == "mute" || c == "unmute" || c.startsWith("mute ") ||
-            c.startsWith("louder") || c.startsWith("quieter")
+        val words = CommandText.words(command)
+        val first = words.firstOrNull() ?: return false
+
+        if (first in listOf("open", "launch", "search", "find")) return false
+
+        if (CommandText.hasPhrase(command, "volume")) return true
+        if (first in listOf("mute", "unmute")) return true
+
+        return false
     }
 
     override fun execute(context: Context, command: String): SkillResult {
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             ?: return SkillResult.Failed("Audio service unavailable.")
 
-        val c = command.lowercase()
+        val c = CommandText.normalize(command)
         val stream = AudioManager.STREAM_MUSIC
         val max = audio.getStreamMaxVolume(stream)
 

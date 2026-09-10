@@ -24,8 +24,7 @@ object SkillRegistry {
 
     fun bootstrap() {
         if (skills.isNotEmpty()) return
-        // Order matters: the first skill that claims a command wins, so the
-        // specific ones go before the broad ones.
+        // Registration order no longer decides anything; Skill.priority does.
         register(CallSkill())
         register(WhatsAppSkill())
         register(FlashlightSkill())
@@ -47,9 +46,16 @@ object SkillRegistry {
         skills.removeAll { it.id == id }
     }
 
-    /** First skill that claims the command, or null if TOCO has no module yet. */
+    /**
+     * Highest-priority skill that claims the command, or null if none does.
+     * Ties fall back to registration order, which is stable.
+     */
     fun resolve(command: String): Skill? =
-        skills.firstOrNull { it.canHandle(command) }
+        skills.filter { it.canHandle(command) }.maxByOrNull { it.priority }
+
+    /** Every skill that claims the command, strongest first. Useful for debugging. */
+    fun candidates(command: String): List<Skill> =
+        skills.filter { it.canHandle(command) }.sortedByDescending { it.priority }
 
     fun all(): List<Skill> = skills.toList()
 

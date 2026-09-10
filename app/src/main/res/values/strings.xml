@@ -60,7 +60,7 @@
     <string name="step_stopped">Stopped after step %1$d.</string>
     <string name="wake_channel">Background listening</string>
     <string name="wake_title">TOCO is listening</string>
-    <string name="wake_idle">Say a wake word</string>
+    <string name="wake_idle">Sleeping · say a wake word</string>
     <string name="wake_listening">Listening for your command\u2026</string>
     <string name="wake_action_talk">Talk</string>
     <string name="wake_action_stop">Stop</string>
@@ -77,4 +77,6 @@
 While the screen is locked TOCO can still change volume, toggle the flashlight, control media and answer out loud. Opening apps or dialling needs “Display over other apps”, because Android blocks background apps from starting screens.
 
 If listening stops on its own, set TOCO to Unrestricted in your battery settings — the system killed the service.</string>
+    <string name="wake_greeting">How can I help you?</string>
+    <string name="wake_no_ai">I can only run device commands right now. Add a Gemini key to answer questions.</string>
 </resources>

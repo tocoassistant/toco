@@ -5,6 +5,7 @@ import android.media.AudioManager
 import android.view.KeyEvent
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
+import com.toco.ai.util.CommandText
 
 /**
  * "play", "pause", "next song", "previous track"
@@ -18,20 +19,35 @@ class MediaSkill : Skill {
     override val id = "core.media"
     override val name = "Media Control"
 
+    // Below the app opener, so "open play store" opens the app rather than
+    // being treated as a play command.
+    override val priority = 45
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase().trim()
-        val words = listOf(
-            "play", "pause", "resume", "next song", "next track", "skip",
-            "previous song", "previous track", "stop music", "play music"
+        val words = CommandText.words(command)
+        val first = words.firstOrNull() ?: return false
+
+        // A command that starts with another verb is not ours, even if the
+        // word "play" appears later: "open play store", "search play music".
+        if (first in listOf("open", "launch", "start", "search", "find", "run")) {
+            return false
+        }
+
+        if (first in listOf("play", "pause", "resume", "next", "previous", "skip")) {
+            return true
+        }
+
+        return CommandText.hasAnyPhrase(
+            command,
+            listOf("play music", "pause music", "stop music", "next song", "previous song")
         )
-        return words.any { c == it || c.startsWith("$it ") || c.contains(" $it") }
     }
 
     override fun execute(context: Context, command: String): SkillResult {
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             ?: return SkillResult.Failed("Audio service unavailable.")
 
-        val c = command.lowercase()
+        val c = CommandText.normalize(command)
         val (code, label) = when {
             c.contains("next") || c.contains("skip") ->
                 KeyEvent.KEYCODE_MEDIA_NEXT to "Next track"

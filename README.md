@@ -27,29 +27,42 @@ Android AI assistant. Drop-in project — see `BUILD.md` to build.
 - **Voice picker** in Models: four options, each a pitch/rate pairing over
   whatever voices your phone's speech engine actually has
 
-**Background listening (built, read this)**
+**Background listening — sleep mode**
 
-Settings -> Background listening turns on a foreground service that loops
-`SpeechRecognizer` to catch a wake phrase. This is not a trained wake-word
-model, and the difference is real:
+Settings -> Background listening. Two states:
 
-- Noticeable battery drain; the mic never rests
-- Wake words can be missed during the gap between recognizer restarts
-- TOCO holds the mic, so other apps (Google Assistant included) may not record
-- Some recognizers need network, so detection can stop when offline
-- Infinix and similar will kill the service unless TOCO is set to
-  **Unrestricted** in battery settings
+- **Sleeping**: a tiny AudioRecord watches raw microphone amplitude only. No
+  recognition, no network, almost no work. It cannot hear words, only that a
+  sound loud enough to be speech happened.
+- **Awake**: sound detected, so the mic goes to SpeechRecognizer for ONE
+  session to check for a wake phrase. Match -> "How can I help you?" ->
+  listens once for the command. No match -> straight back to sleep.
 
-While locked it can change volume, toggle the flashlight, control media and
-answer out loud. Opening apps or dialling needs **Display over other apps**
-(now listed in Access), because Android blocks background apps from starting
-screens.
+So the recognizer runs when someone speaks nearby, not every two seconds
+forever. "toco volume up" in one breath skips the greeting.
 
-The reliable alternatives ship alongside it: a **Quick Settings tile** and a
-**Talk** button on the notification, both one tap, neither costing battery.
+Commands run as device actions; questions go to Gemini and are spoken back.
 
-Phrases are editable in Settings. Default: hey toco, toco, hi toco, assistant,
-ok toco. Shorter phrases false-trigger more.
+Remaining limits: amplitude cannot tell speech from a door slam, so loud noise
+still wakes it (it sleeps again immediately). A word in the first moment of
+waking can clip. OEM battery managers still kill foreground services — set
+TOCO to **Unrestricted**. A trained wake-word model would beat this.
+
+Locked-screen: volume, flashlight, media and spoken answers work. Opening apps
+or dialling needs **Display over other apps** (listed in Access), because
+Android blocks background activity starts.
+
+Fallbacks that cannot be killed: **Quick Settings tile** and the **Talk**
+button on the notification.
+
+**Command matching**
+
+Skills match on the verb at the start or on whole words, never on substrings,
+and each carries a `priority` so the strongest claim wins. This replaced
+substring matching, where "open play store" was captured by the media skill
+because the text contained "play". `CommandText` also normalises everyday
+phrasing — "torch", "louder", "go to", "please", "fire up" — so plain speech
+works without memorising syntax.
 
 **Not built yet**
 AccessibilityService (back/home/scroll/tap inside other apps), SFX/haptics,

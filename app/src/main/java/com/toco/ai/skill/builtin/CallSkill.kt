@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
+import com.toco.ai.util.CommandText
 import com.toco.ai.util.Contacts
 import com.toco.ai.util.Permissions
 import com.toco.ai.util.PhoneNumbers
@@ -31,10 +32,14 @@ class CallSkill : Skill {
 
     private val triggers = listOf("call", "dial", "phone", "ring")
 
+    // Highest, because "call mom" must never be read as anything else.
+    override val priority = 95
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase().trim()
-        if (c.contains("whatsapp") || c.contains("imo")) return false
-        return triggers.any { c == it || c.startsWith("$it ") || c.contains(" $it ") }
+        if (CommandText.hasAnyPhrase(command, listOf("whatsapp", "imo", "message"))) {
+            return false
+        }
+        return CommandText.startsWithVerb(command, triggers)
     }
 
     override fun execute(context: Context, command: String): SkillResult {

@@ -6,6 +6,7 @@ import android.net.Uri
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
 import com.toco.ai.util.AppFinder
+import com.toco.ai.util.CommandText
 
 /**
  * "search youtube for lofi", "youtube minecraft", "search google for X",
@@ -49,17 +50,19 @@ class SearchSkill : Skill {
         }
     )
 
+    override val priority = 85
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase()
-        val searching = c.contains("search") || c.contains("look up") ||
-            c.contains("find") || c.contains("look for")
+        val searching = CommandText.startsWithVerb(command, listOf("search", "find", "look")) ||
+            CommandText.hasAnyPhrase(command, listOf("search", "search for"))
         if (!searching) return false
-        return targets.any { t -> t.keywords.any { c.contains(it) } }
+        return targets.any { t -> t.keywords.any { CommandText.hasPhrase(command, it) } }
     }
 
     override fun execute(context: Context, command: String): SkillResult {
-        val c = command.lowercase()
-        val target = targets.firstOrNull { t -> t.keywords.any { c.contains(it) } }
+        val target = targets.firstOrNull { t ->
+            t.keywords.any { CommandText.hasPhrase(command, it) }
+        }
             ?: return SkillResult.Failed("Search where?")
 
         val query = extractQuery(command, target.keywords)

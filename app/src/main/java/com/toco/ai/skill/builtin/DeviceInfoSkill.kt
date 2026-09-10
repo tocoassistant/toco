@@ -9,6 +9,7 @@ import android.os.Environment
 import android.os.StatFs
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
+import com.toco.ai.util.CommandText
 
 /**
  * "battery", "how much battery", "device info", "android version", "storage"
@@ -21,16 +22,20 @@ class DeviceInfoSkill : Skill {
     override val id = "core.device_info"
     override val name = "Device Info"
 
+    override val priority = 65
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase()
-        return c.contains("battery") || c.contains("charge") ||
-            c.contains("device info") || c.contains("phone info") ||
-            c.contains("android version") || c.contains("storage") ||
-            c.contains("free space") || c.contains("model")
+        val words = CommandText.words(command)
+        if (words.firstOrNull() in listOf("open", "launch", "search", "find")) return false
+
+        return CommandText.hasAnyPhrase(
+            command,
+            listOf("battery", "charging", "storage", "space", "android version")
+        ) || CommandText.hasAnyPhrase(command, listOf("device info", "phone info"))
     }
 
     override fun execute(context: Context, command: String): SkillResult {
-        val c = command.lowercase()
+        val c = CommandText.normalize(command)
 
         return when {
             c.contains("battery") || c.contains("charge") -> battery(context)

@@ -4,6 +4,7 @@ import android.content.Context
 import android.hardware.camera2.CameraManager
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
+import com.toco.ai.util.CommandText
 
 /**
  * "flashlight on", "torch off", "turn on the light"
@@ -18,17 +19,26 @@ class FlashlightSkill : Skill {
 
     private var on = false
 
+    override val priority = 70
+
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase()
-        return c.contains("flashlight") || c.contains("torch") ||
-            (c.contains("light") && (c.contains("on") || c.contains("off")))
+        // "torch" is normalised to "flashlight" before we get here.
+        if (CommandText.hasPhrase(command, "flashlight")) return true
+
+        // Plain "light" only counts with an on/off word, and only if the
+        // command isn't about opening something.
+        val words = CommandText.words(command)
+        if (words.firstOrNull() in listOf("open", "launch", "search", "find")) return false
+
+        return CommandText.hasPhrase(command, "light") &&
+            CommandText.hasAnyPhrase(command, listOf("on", "off"))
     }
 
     override fun execute(context: Context, command: String): SkillResult {
         val manager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
             ?: return SkillResult.Failed("Camera service unavailable.")
 
-        val c = command.lowercase()
+        val c = CommandText.normalize(command)
         val wantOn = when {
             c.contains("off") || c.contains("close") || c.contains("stop") -> false
             c.contains("on") || c.contains("open") || c.contains("start") -> true
