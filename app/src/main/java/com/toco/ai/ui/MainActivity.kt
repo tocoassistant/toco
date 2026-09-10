@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.toco.ai.R
-import com.toco.ai.ui.access.AccessFragment
+import com.toco.ai.ui.access.AccessSheet
 import com.toco.ai.ui.common.SimpleFragment
 import com.toco.ai.ui.home.HomeFragment
 import com.toco.ai.ui.models.ModelsFragment
@@ -34,13 +34,10 @@ class MainActivity : AppCompatActivity() {
         outState.putInt(KEY_TAB, nav.selectedIndex())
     }
 
-    /** Opens Access as an overlay page; system back returns to the current tab. */
+    /** Opens Access as a bottom overlay, leaving the current page in place. */
     fun openAccess() {
-        supportFragmentManager.beginTransaction()
-            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-            .replace(R.id.pageContainer, AccessFragment(), "page_access")
-            .addToBackStack("access")
-            .commit()
+        if (supportFragmentManager.findFragmentByTag(AccessSheet.TAG) != null) return
+        AccessSheet().show(supportFragmentManager, AccessSheet.TAG)
     }
 
     private fun showPage(index: Int) {
@@ -61,7 +58,7 @@ class MainActivity : AppCompatActivity() {
         MODELS -> ModelsFragment()
         HOME -> HomeFragment()
         ANALYSE -> SimpleFragment.create(R.string.analyse_title, R.string.analyse_body)
-        else -> AccessFragment()
+        else -> SimpleFragment.create(R.string.settings_title, R.string.settings_body)
     }
 
     private companion object {

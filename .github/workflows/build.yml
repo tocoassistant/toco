@@ -8,20 +8,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      # These settings exist only for on-device proot builds and would
-      # break or slow down CI.
+      # These settings exist only for the on-device proot build and would
+      # break or slow down CI: the JDK path does not exist on a runner.
       - name: Strip on-device tuning
         run: |
           sed -i '/org.gradle.java.home/d' gradle.properties
           sed -i '/org.gradle.workers.max/d' gradle.properties
           sed -i '/org.gradle.jvmargs/d' gradle.properties
+
+      # The key is a repo secret, never committed. Without it the app still
+      # builds; TOCO just reports that the AI is not configured.
+      - name: Write local.properties
+        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > local.properties
 
       - run: chmod +x gradlew
 

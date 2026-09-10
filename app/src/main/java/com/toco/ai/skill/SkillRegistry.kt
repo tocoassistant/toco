@@ -1,8 +1,13 @@
 package com.toco.ai.skill
 
 import com.toco.ai.skill.builtin.CallSkill
+import com.toco.ai.skill.builtin.DeviceInfoSkill
+import com.toco.ai.skill.builtin.FlashlightSkill
+import com.toco.ai.skill.builtin.MediaSkill
 import com.toco.ai.skill.builtin.OpenAppSkill
+import com.toco.ai.skill.builtin.SettingsSkill
 import com.toco.ai.skill.builtin.SpeakSkill
+import com.toco.ai.skill.builtin.VolumeSkill
 import com.toco.ai.skill.builtin.WhatsAppSkill
 
 /**
@@ -18,8 +23,15 @@ object SkillRegistry {
 
     fun bootstrap() {
         if (skills.isNotEmpty()) return
+        // Order matters: the first skill that claims a command wins, so the
+        // specific ones go before the broad ones.
         register(CallSkill())
         register(WhatsAppSkill())
+        register(FlashlightSkill())
+        register(VolumeSkill())
+        register(MediaSkill())
+        register(DeviceInfoSkill())
+        register(SettingsSkill())
         register(OpenAppSkill())
         register(SpeakSkill())
     }

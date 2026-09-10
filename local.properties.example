@@ -1,0 +1,12 @@
+# Copy this file to "local.properties" and fill in your key.
+# local.properties is git-ignored, so the key never reaches the repo.
+#
+# Get a free key at https://aistudio.google.com/apikey
+#
+# Leave it blank or omit the file entirely and TOCO still builds and runs —
+# it will simply report that the AI is not configured when a command needs it.
+
+GEMINI_API_KEY=
+
+# The Android SDK path is usually written here automatically by the IDE.
+# sdk.dir=/path/to/android/sdk

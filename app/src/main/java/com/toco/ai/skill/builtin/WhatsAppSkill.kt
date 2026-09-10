@@ -1,5 +1,6 @@
 package com.toco.ai.skill.builtin
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -7,13 +8,17 @@ import com.toco.ai.core.Prefs
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
 import com.toco.ai.util.AppFinder
+import com.toco.ai.util.Contacts
+import com.toco.ai.util.Permissions
 import com.toco.ai.util.PhoneNumbers
 
 /**
- * "whatsapp 03001234567" / "message 0300... on whatsapp"
+ * "whatsapp mom saying hi", "whatsapp 0300... hello", "message ammi on whatsapp"
  *
- * Opens the chat via the official wa.me deep link. Actually *sending* the text
- * without a tap needs an AccessibilityService — that arrives in a later phase.
+ * Opens the chat with the text pre-filled via the official wa.me link. The
+ * final send still needs one tap — pressing send for the user requires an
+ * AccessibilityService, which is a later phase, and TOCO does not pretend
+ * otherwise.
  */
 class WhatsAppSkill : Skill {
 
@@ -21,10 +26,13 @@ class WhatsAppSkill : Skill {
     override val name = "WhatsApp Message"
 
     private val packageName = "com.whatsapp"
+    private val triggers = listOf("whatsapp", "wa", "message", "msg", "text")
 
     override fun canHandle(command: String): Boolean {
-        val c = command.lowercase()
-        return c.contains("whatsapp") && PhoneNumbers.extract(command) != null
+        val c = command.lowercase().trim()
+        if (c.contains("whatsapp")) return true
+        // "message mom saying hi" counts only if no other app was named.
+        return triggers.any { c.startsWith("$it ") } && !c.contains("imo")
     }
 
     override fun execute(context: Context, command: String): SkillResult {
@@ -32,33 +40,74 @@ class WhatsAppSkill : Skill {
             return SkillResult.Failed("WhatsApp isn't installed on this phone.")
         }
 
-        val raw = PhoneNumbers.extract(command)
-            ?: return SkillResult.Failed("I couldn't find a number in that.")
-        val number = PhoneNumbers.toWhatsApp(raw, Prefs(context).countryCode)
         val text = extractMessage(command)
+        val literal = PhoneNumbers.extract(command)
 
+        if (literal != null) {
+            val number = PhoneNumbers.toWhatsApp(literal, Prefs(context).countryCode)
+            return open(context, number, text, number)
+        }
+
+        val name = Contacts.nameFrom(stripAppWords(command), triggers)
+        if (name.isEmpty()) {
+            return SkillResult.Failed("Who should I message?")
+        }
+
+        if (!Permissions.has(context, Manifest.permission.READ_CONTACTS)) {
+            return SkillResult.NeedsPermission(
+                Manifest.permission.READ_CONTACTS,
+                "To message \"$name\" I need access to your contacts."
+            )
+        }
+
+        val match = Contacts.findByName(context, name)
+            ?: return SkillResult.Failed("No contact matching \"$name\".")
+
+        val number = PhoneNumbers.toWhatsApp(match.number, Prefs(context).countryCode)
+        return open(context, number, text, match.name)
+    }
+
+    private fun open(
+        context: Context,
+        number: String,
+        text: String,
+        label: String
+    ): SkillResult {
         val uri = buildString {
             append("https://wa.me/").append(number)
             if (text.isNotBlank()) append("?text=").append(Uri.encode(text))
         }
 
         return try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
-                .setPackage(packageName)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            SkillResult.Ok("Opening WhatsApp chat with $number")
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                    .setPackage(packageName)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+            if (text.isNotBlank()) {
+                SkillResult.Ok("Chat with $label ready — tap send")
+            } else {
+                SkillResult.Ok("Opening WhatsApp chat with $label")
+            }
         } catch (e: Exception) {
             SkillResult.Failed("Couldn't open WhatsApp: ${e.message}")
         }
     }
 
-    /** Grabs the part after "saying" / "that" / ":" as the message body. */
+    /** Removes app-name words so the remainder can be read as a contact name. */
+    private fun stripAppWords(command: String): String =
+        command.lowercase()
+            .replace("on whatsapp", " ")
+            .replace("via whatsapp", " ")
+            .replace("whatsapp", " ")
+            .trim()
+
+    /** Text after "saying" / "that" / "-" is the message body. */
     private fun extractMessage(command: String): String {
-        val markers = listOf(" saying ", " that ", ": ")
-        for (m in markers) {
-            val idx = command.lowercase().indexOf(m)
-            if (idx >= 0) return command.substring(idx + m.length).trim()
+        val markers = listOf(" saying ", " and say ", " that says ", " that ", " - ", ": ")
+        for (marker in markers) {
+            val at = command.lowercase().indexOf(marker)
+            if (at >= 0) return command.substring(at + marker.length).trim()
         }
         return ""
     }

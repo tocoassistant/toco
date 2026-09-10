@@ -16,9 +16,11 @@ import com.toco.ai.R
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
 import com.toco.ai.core.VoiceInput
+import com.toco.ai.ai.Ai
 import com.toco.ai.engine.CommandEngine
 import com.toco.ai.skill.SkillResult
 import com.toco.ai.ui.MainActivity
+import com.toco.ai.ui.access.AccessSheet
 import com.toco.ai.ui.widget.OrbView
 import com.toco.ai.util.Permissions
 import java.util.Calendar
@@ -102,7 +104,7 @@ class HomeFragment : Fragment() {
         requireView().findViewById<View>(R.id.btnSend).setOnClickListener { submitTyped() }
 
         requireView().findViewById<View>(R.id.btnPermissions).setOnClickListener {
-            (activity as? MainActivity)?.openAccess()
+            AccessSheet().show(parentFragmentManager, AccessSheet.TAG)
         }
 
         etCommand.setOnEditorActionListener { _, actionId, _ ->
@@ -166,12 +168,54 @@ class HomeFragment : Fragment() {
         dispatch(text)
     }
 
+    /**
+     * Device commands run inline. Anything else goes to the model on a
+     * background thread, because a network call on the main thread would
+     * freeze the UI (and Android would throw).
+     */
     private fun dispatch(command: String) {
         etCommand.setText("")
-        orb.setState(OrbView.State.WORKING)
-        setLabel(R.string.orb_working)
 
-        when (val result = engine.handle(requireContext(), command)) {
+        if (engine.isDeviceCommand(command)) {
+            orb.setState(OrbView.State.WORKING)
+            setLabel(R.string.orb_working)
+            applyAction(engine.handle(requireContext(), command))
+            return
+        }
+
+        if (!Ai.isReady()) {
+            tvOrbState.setText(getString(R.string.no_module))
+            orb.setState(OrbView.State.IDLE)
+            resetSoon()
+            return
+        }
+
+        orb.setState(OrbView.State.WORKING)
+        setLabel(R.string.orb_thinking)
+
+        Thread {
+            val reply = engine.handleWithAi(requireContext(), command)
+            view?.post {
+                if (!isAdded) return@post
+                when (reply) {
+                    is CommandEngine.Reply.Action -> applyAction(reply.result)
+                    is CommandEngine.Reply.Answer -> {
+                        tvOrbState.setText(reply.text)
+                        if (prefs.voiceReplies) Voice.speak(requireContext(), reply.text)
+                        orb.setState(OrbView.State.IDLE)
+                    }
+                    is CommandEngine.Reply.Unavailable -> {
+                        tvOrbState.setText(reply.message)
+                        orb.setState(OrbView.State.IDLE)
+                        resetSoon()
+                    }
+                }
+            }
+        }.start()
+    }
+
+    private fun applyAction(result: SkillResult) {
+        when (result) {
             is SkillResult.Ok -> {
                 tvOrbState.setText(result.message)
                 if (prefs.voiceReplies) Voice.speak(requireContext(), result.message)
@@ -192,8 +236,6 @@ class HomeFragment : Fragment() {
             }
         }
     }
-
-    // ---------------- state helpers ----------------
 
     private fun idle() {
         orb.setState(OrbView.State.IDLE)

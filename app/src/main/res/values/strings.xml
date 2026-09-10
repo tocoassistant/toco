@@ -49,4 +49,6 @@
     <string name="action_open_settings">Tap to open system settings</string>
     <string name="action_none_needed">No permission needed</string>
     <string name="action_unsupported_here">Your Android version cannot provide this</string>
+    <string name="access_view_all">View all permissions</string>
+    <string name="orb_thinking">Thinking\u2026</string>
 </resources>

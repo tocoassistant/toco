@@ -3,6 +3,16 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Gemini key comes from local.properties, which is git-ignored so the key
+// never reaches the repo. Absent key -> empty string -> TOCO reports that the
+// AI is not configured instead of crashing.
+def localProps = new Properties()
+def localFile = rootProject.file("local.properties")
+if (localFile.exists()) {
+    localFile.withInputStream { localProps.load(it) }
+}
+def geminiKey = localProps.getProperty("GEMINI_API_KEY", "")
+
 android {
     namespace 'com.toco.ai'
     compileSdk 34
@@ -13,6 +23,13 @@ android {
         targetSdk 34
         versionCode 1
         versionName "0.1.0"
+
+        buildConfigField "String", "GEMINI_API_KEY", "\"" + geminiKey + "\""
+    }
+
+    // AGP 8 turns BuildConfig off by default; the Gemini key needs it.
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {

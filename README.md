@@ -14,12 +14,15 @@ Android AI assistant. Drop-in project — see `BUILD.md` to build.
 - **TOCO Access**: real permission status per capability, with Allowed /
   Limited / Not allowed / Not connected / Not supported, and the correct
   system settings deep link for the ones Android will not let an app grant
-- Commands: `open <app>`, `call <number>`, `whatsapp <number> saying <text>`,
-  `say <text>`. Anything else answers "no module for that yet"
+- **Commands**: call/whatsapp (by number OR contact name), open app, volume,
+  flashlight, media play/pause/next/prev, battery, storage, device info, and
+  every Settings screen by name
+- **Gemini fallback**: anything no module claims becomes a conversation with
+  the model instead of a dead end
 
 **Not built yet**
-AccessibilityService, AndroidActionManager (volume/flashlight/media/settings
-intents), AI provider + command schema, SFX/haptics, action log, boot animation.
+AccessibilityService (back/home/scroll/tap inside other apps), wake word,
+SFX/haptics, action log, boot animation, structured AI command schema.
 
 ## Layout
 
