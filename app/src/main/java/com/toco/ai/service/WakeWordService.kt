@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -309,17 +310,19 @@ class WakeWordService : Service() {
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(open)
             .setOngoing(true)
-            .addAction(
-                Notification.Action.Builder(
-                    null, getString(R.string.wake_action_talk), talk
-                ).build()
-            )
-            .addAction(
-                Notification.Action.Builder(
-                    null, getString(R.string.wake_action_stop), stop
-                ).build()
-            )
+            .addAction(action(getString(R.string.wake_action_talk), talk))
+            .addAction(action(getString(R.string.wake_action_stop), stop))
             .build()
+    }
+
+    /**
+     * Built separately because Notification.Action.Builder has both an
+     * Icon and a deprecated int-icon overload; a bare null is ambiguous, so
+     * the type is stated explicitly.
+     */
+    private fun action(title: String, intent: PendingIntent): Notification.Action {
+        val icon: Icon? = null
+        return Notification.Action.Builder(icon, title, intent).build()
     }
 
     companion object {

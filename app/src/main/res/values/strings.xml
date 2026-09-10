@@ -53,8 +53,8 @@
     <string name="orb_thinking">Thinking\u2026</string>
     <string name="modules_heading">COMMAND MODULES</string>
     <string name="voice_preview">Preview</string>
-    <string name="voice_single_engine">Your phone's speech engine only exposes one English voice, so these options differ by pitch and speed rather than being separate voices.</string>
-    <string name="voice_multi_engine">Using %1$d English voices from your phone's speech engine, each tuned for pitch and speed.</string>
+    <string name="voice_single_engine">Your phone\'s speech engine only exposes one English voice, so these options differ by pitch and speed rather than being separate voices.</string>
+    <string name="voice_multi_engine">Using %1$d English voices from your phone\'s speech engine, each tuned for pitch and speed.</string>
     <string name="step_progress">Step %1$d of %2$d</string>
     <string name="steps_done">Done \u00b7 %1$d steps</string>
     <string name="step_stopped">Stopped after step %1$d.</string>
