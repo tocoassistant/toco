@@ -26,6 +26,9 @@ object Voice {
         }
     }
 
+    /** The live engine, for callers that need to set pitch, rate or voice. */
+    fun engine(): TextToSpeech? = if (ready) tts else null
+
     fun speak(context: Context, text: String) {
         init(context)
         if (ready) say(text) else queue += text

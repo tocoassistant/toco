@@ -20,6 +20,7 @@ object PermissionManager {
     // Capability IDs referenced from the UI.
     const val ID_ACCESSIBILITY = "accessibility"
     const val ID_NOTIFICATION_ACCESS = "notification_access"
+    const val ID_OVERLAY = "overlay"
 
     /**
      * Declared capabilities. Nothing is listed here that TOCO does not have a
@@ -106,6 +107,13 @@ object PermissionManager {
             }
         ),
         Capability(
+            id = ID_OVERLAY,
+            label = "Display over other apps",
+            explanation = "Lets TOCO open apps and dial while the screen is locked. " +
+                "Android blocks background apps from starting screens without this.",
+            gate = Gate.SYSTEM_SETTINGS
+        ),
+        Capability(
             id = "flashlight",
             label = "Flashlight",
             explanation = "Works with no permission at all on this Android version.",
@@ -136,6 +144,10 @@ object PermissionManager {
 
                 ID_NOTIFICATION_ACCESS ->
                     if (isNotificationAccessGranted(context)) CapabilityStatus.ALLOWED
+                    else CapabilityStatus.NOT_CONNECTED
+
+                ID_OVERLAY ->
+                    if (Settings.canDrawOverlays(context)) CapabilityStatus.ALLOWED
                     else CapabilityStatus.NOT_CONNECTED
 
                 else -> CapabilityStatus.NOT_CONNECTED
@@ -192,6 +204,10 @@ object PermissionManager {
 
             capability.id == ID_NOTIFICATION_ACCESS ->
                 Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+
+            capability.id == ID_OVERLAY ->
+                Intent("android.settings.action.MANAGE_OVERLAY_PERMISSION")
+                    .setData(Uri.parse("package:" + context.packageName))
 
             else -> null
         }?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

@@ -9,6 +9,7 @@ import com.toco.ai.ui.common.SimpleFragment
 import com.toco.ai.ui.home.HomeFragment
 import com.toco.ai.ui.models.ModelsFragment
 import com.toco.ai.ui.nav.TocoBottomNav
+import com.toco.ai.ui.settings.SettingsFragment
 
 /**
  * Single-activity shell. Every page is a fragment swapped into pageContainer,
@@ -58,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         MODELS -> ModelsFragment()
         HOME -> HomeFragment()
         ANALYSE -> SimpleFragment.create(R.string.analyse_title, R.string.analyse_body)
-        else -> SimpleFragment.create(R.string.settings_title, R.string.settings_body)
+        else -> SettingsFragment()
     }
 
     private companion object {

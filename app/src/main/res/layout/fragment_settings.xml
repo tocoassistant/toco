@@ -11,14 +11,7 @@
         style="@style/Text.Greeting"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/models_title" />
-
-    <TextView
-        android:id="@+id/tvModelCount"
-        style="@style/Text.Secondary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp" />
+        android:text="@string/settings_title" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -26,7 +19,7 @@
         android:layout_weight="1"
         android:layout_marginTop="18dp"
         android:clipToPadding="false"
-        android:paddingBottom="16dp">
+        android:paddingBottom="20dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -34,35 +27,46 @@
             android:orientation="vertical">
 
             <LinearLayout
-                android:id="@+id/voiceList"
+                android:id="@+id/toggleList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
-
-            <TextView
-                android:id="@+id/tvVoiceNote"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="22dp"
-                android:textColor="@color/text_hint"
-                android:textSize="11sp"
-                android:lineSpacingExtra="2dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:text="@string/modules_heading"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/wake_words_heading"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <LinearLayout
-                android:id="@+id/modelList"
+            <EditText
+                android:id="@+id/etWakeWords"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:background="@drawable/bg_command_bar"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="14sp"
+                android:inputType="text"
+                android:imeOptions="actionDone"
+                android:importantForAutofill="no"
+                android:hint="@string/wake_words_hint" />
+
+            <TextView
+                android:id="@+id/tvWakeNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp"
+                android:lineSpacingExtra="3dp" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

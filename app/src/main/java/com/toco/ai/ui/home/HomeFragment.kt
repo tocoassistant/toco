@@ -18,6 +18,7 @@ import com.toco.ai.core.Voice
 import com.toco.ai.core.VoiceInput
 import com.toco.ai.ai.Ai
 import com.toco.ai.engine.CommandEngine
+import com.toco.ai.engine.CommandSequencer
 import com.toco.ai.skill.SkillResult
 import com.toco.ai.ui.MainActivity
 import com.toco.ai.ui.access.AccessSheet
@@ -36,6 +37,14 @@ class HomeFragment : Fragment() {
     private lateinit var etCommand: EditText
 
     private val engine = CommandEngine()
+    private val sequencer = CommandSequencer(engine)
+
+    /**
+     * The command that triggered a permission request. Without this, granting
+     * the permission did nothing visible and the feature looked broken — the
+     * user had to retype the command.
+     */
+    private var pendingCommand: String? = null
     private lateinit var prefs: Prefs
     private var voiceInput: VoiceInput? = null
 
@@ -48,7 +57,13 @@ class HomeFragment : Fragment() {
     /** Permissions a skill asked for mid-command (call, contacts, ...). */
     private val skillPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (!granted) toast("Permission denied.")
+            val retry = pendingCommand
+            pendingCommand = null
+            if (granted && retry != null) {
+                dispatch(retry)
+            } else if (!granted) {
+                toast("Permission denied.")
+            }
         }
 
     override fun onCreateView(
@@ -176,7 +191,15 @@ class HomeFragment : Fragment() {
     private fun dispatch(command: String) {
         etCommand.setText("")
 
+        val steps = sequencer.split(command)
+
+        if (steps.size > 1) {
+            runSequence(command, steps.size)
+            return
+        }
+
         if (engine.isDeviceCommand(command)) {
+            pendingCommand = command
             orb.setState(OrbView.State.WORKING)
             setLabel(R.string.orb_working)
             applyAction(engine.handle(requireContext(), command))
@@ -211,6 +234,52 @@ class HomeFragment : Fragment() {
                     }
                 }
             }
+        }.start()
+    }
+
+    /**
+     * Chained commands run on a background thread because the sequencer sleeps
+     * between steps to let each app reach the foreground.
+     */
+    private fun runSequence(command: String, total: Int) {
+        orb.setState(OrbView.State.WORKING)
+        tvOrbState.setText(getString(R.string.step_progress, 1, total))
+
+        Thread {
+            sequencer.run(
+                context = requireContext(),
+                raw = command,
+                onStep = { index, count, step ->
+                    view?.post {
+                        if (!isAdded) return@post
+                        tvOrbState.setText(
+                            getString(R.string.step_progress, index + 1, count) + "  " + step
+                        )
+                    }
+                },
+                onDone = { done ->
+                    view?.post {
+                        if (!isAdded) return@post
+                        val failed = done.lastOrNull()?.result
+                        if (failed is SkillResult.Ok || failed == null) {
+                            val summary = getString(R.string.steps_done, done.size)
+                            tvOrbState.setText(summary)
+                            if (prefs.voiceReplies) Voice.speak(requireContext(), summary)
+                        } else {
+                            val message = when (failed) {
+                                is SkillResult.Failed -> failed.message
+                                is SkillResult.NeedsPermission -> failed.reason
+                                else -> getString(R.string.no_module)
+                            }
+                            tvOrbState.setText(
+                                getString(R.string.step_stopped, done.size) + " " + message
+                            )
+                        }
+                        orb.setState(OrbView.State.IDLE)
+                        resetSoon()
+                    }
+                }
+            )
         }.start()
     }
 

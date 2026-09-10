@@ -5,6 +5,7 @@ import com.toco.ai.skill.builtin.DeviceInfoSkill
 import com.toco.ai.skill.builtin.FlashlightSkill
 import com.toco.ai.skill.builtin.MediaSkill
 import com.toco.ai.skill.builtin.OpenAppSkill
+import com.toco.ai.skill.builtin.SearchSkill
 import com.toco.ai.skill.builtin.SettingsSkill
 import com.toco.ai.skill.builtin.SpeakSkill
 import com.toco.ai.skill.builtin.VolumeSkill
@@ -31,6 +32,7 @@ object SkillRegistry {
         register(VolumeSkill())
         register(MediaSkill())
         register(DeviceInfoSkill())
+        register(SearchSkill())
         register(SettingsSkill())
         register(OpenAppSkill())
         register(SpeakSkill())

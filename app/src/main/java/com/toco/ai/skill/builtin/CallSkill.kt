@@ -13,16 +13,21 @@ import com.toco.ai.util.PhoneNumbers
 /**
  * "call 03001234567", "call mom", "dial ammi", "phone my brother"
  *
- * Claims the command on the trigger word ALONE. It used to also require a
- * number to be present, which meant "call mom" fell through and TOCO reported
- * "no module for that yet" — technically true, but useless. Claiming early
- * lets execute() explain the real problem instead.
+ * Two-tier dialing, which is why this now works where it used to fail:
+ *
+ *   ACTION_CALL  places the call directly, but needs CALL_PHONE and is blocked
+ *                outright by some ROMs.
+ *   ACTION_DIAL  opens the dialer with the number filled in, needs NO
+ *                permission, and cannot be blocked.
+ *
+ * So TOCO tries the direct call and quietly falls back to the dialer instead of
+ * dead-ending. It does not declare CALL_PHONE as required, because the skill is
+ * useful without it — declaring it meant the engine refused to run at all.
  */
 class CallSkill : Skill {
 
     override val id = "core.call"
     override val name = "Phone Call"
-    override val requiredPermissions = listOf(Manifest.permission.CALL_PHONE)
 
     private val triggers = listOf("call", "dial", "phone", "ring")
 
@@ -33,28 +38,18 @@ class CallSkill : Skill {
     }
 
     override fun execute(context: Context, command: String): SkillResult {
-        if (!Permissions.has(context, Manifest.permission.CALL_PHONE)) {
-            return SkillResult.NeedsPermission(
-                Manifest.permission.CALL_PHONE,
-                "TOCO needs call permission to dial for you."
-            )
-        }
-
-        // A literal number in the text always wins over a contact lookup.
         val literal = PhoneNumbers.extract(command)
         if (literal != null) {
             return dial(context, PhoneNumbers.toDialable(literal), literal)
         }
 
         val name = Contacts.nameFrom(command, triggers)
-        if (name.isEmpty()) {
-            return SkillResult.Failed("Who should I call?")
-        }
+        if (name.isEmpty()) return SkillResult.Failed("Who should I call?")
 
         if (!Permissions.has(context, Manifest.permission.READ_CONTACTS)) {
             return SkillResult.NeedsPermission(
                 Manifest.permission.READ_CONTACTS,
-                "To call \"$name\" I need access to your contacts."
+                "To call \"$name\" I need your contacts."
             )
         }
 
@@ -64,14 +59,28 @@ class CallSkill : Skill {
         return dial(context, PhoneNumbers.toDialable(match.number), match.name)
     }
 
-    private fun dial(context: Context, number: String, label: String): SkillResult =
-        try {
+    private fun dial(context: Context, number: String, label: String): SkillResult {
+        // Direct call, if we're allowed.
+        if (Permissions.has(context, Manifest.permission.CALL_PHONE)) {
+            try {
+                context.startActivity(
+                    Intent(Intent.ACTION_CALL, Uri.parse("tel:$number"))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+                return SkillResult.Ok("Calling $label")
+            } catch (e: Exception) {
+                // ROM blocked it — fall through to the dialer.
+            }
+        }
+
+        return try {
             context.startActivity(
-                Intent(Intent.ACTION_CALL, Uri.parse("tel:$number"))
+                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number"))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-            SkillResult.Ok("Calling $label")
+            SkillResult.Ok("Dialer ready for $label — press call")
         } catch (e: Exception) {
-            SkillResult.Failed("Couldn't place the call: ${e.message}")
+            SkillResult.Failed("No dialer app on this phone.")
         }
+    }
 }
