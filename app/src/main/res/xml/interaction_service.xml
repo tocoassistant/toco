@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Required for TOCO to appear as a Digital assistant app option.
+
+    supportsAssist=true is what allows the assist gesture (long-press home) to
+    reach us. recognitionService must name a real RecognitionService component,
+    so TOCO ships a thin one that delegates to the platform recognizer.
+-->
+<voice-interaction-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="com.toco.ai.service.TocoSessionService"
+    android:recognitionService="com.toco.ai.service.TocoRecognitionService"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true" />

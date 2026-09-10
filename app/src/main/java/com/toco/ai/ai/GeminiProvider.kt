@@ -17,7 +17,16 @@ import java.net.URL
  */
 class GeminiProvider(
     private val apiKey: String,
-    private val model: String = "gemini-2.0-flash"
+    /**
+     * Tried in order. Google renames and retires model ids, and a 404 on one
+     * name shouldn't look like "Gemini is broken" — so TOCO falls through to
+     * the next instead of failing outright.
+     */
+    private val models: List<String> = listOf(
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-flash-latest"
+    )
 ) : AIProvider {
 
     override val name = "Gemini"
@@ -27,10 +36,31 @@ class GeminiProvider(
     override fun ask(prompt: String, history: List<AIProvider.Turn>): AIResult {
         if (!isConfigured()) {
             return AIResult.NotConfigured(
-                "No Gemini key. Add GEMINI_API_KEY to local.properties and rebuild."
+                "No Gemini key in this build. Add GEMINI_API_KEY as a GitHub " +
+                    "repository secret, or to local.properties if building on device."
             )
         }
 
+        var last: AIResult = AIResult.Failed("No model responded.")
+
+        for (model in models) {
+            val result = call(model, prompt, history)
+            // A model-name problem is worth retrying; anything else is final.
+            if (result is AIResult.Failed && result.message.contains("404")) {
+                last = result
+                continue
+            }
+            return result
+        }
+
+        return last
+    }
+
+    private fun call(
+        model: String,
+        prompt: String,
+        history: List<AIProvider.Turn>
+    ): AIResult {
         val url = "https://generativelanguage.googleapis.com/v1beta/models/" +
             "$model:generateContent?key=$apiKey"
 
@@ -52,10 +82,11 @@ class GeminiProvider(
 
             when {
                 code == 400 || code == 403 -> AIResult.NotConfigured(
-                    "Gemini rejected the key. Check GEMINI_API_KEY."
+                    "Gemini rejected the key: " + reason(raw)
                 )
+                code == 404 -> AIResult.Failed("404: model $model not available.")
                 code == 429 -> AIResult.Failed("Gemini rate limit reached. Try again shortly.")
-                code !in 200..299 -> AIResult.Failed("Gemini error $code.")
+                code !in 200..299 -> AIResult.Failed("Gemini error $code: " + reason(raw))
                 else -> parse(raw)
             }
         } catch (e: Exception) {
@@ -97,6 +128,14 @@ class GeminiProvider(
             )
             .toString()
     }
+
+    /** Pulls the human-readable message out of an API error body. */
+    private fun reason(raw: String): String =
+        try {
+            JSONObject(raw).optJSONObject("error")?.optString("message", "") ?: ""
+        } catch (e: Exception) {
+            ""
+        }.ifBlank { "no details returned" }.take(160)
 
     private fun parse(raw: String): AIResult {
         return try {

@@ -55,6 +55,17 @@ Android blocks background activity starts.
 Fallbacks that cannot be killed: **Quick Settings tile** and the **Talk**
 button on the notification.
 
+**Assistant role (the Siri-style trigger)**
+
+TOCO registers a `VoiceInteractionService`, so it can be selected at
+Settings -> Apps -> Default apps -> Digital assistant app. Once selected,
+long-pressing home (or the power button, or the assist gesture, depending on
+the phone) starts TOCO listening over whatever is on screen.
+
+This is as close as Android allows. Siri is part of iOS; no third-party app on
+any platform can replace it. What Android does offer is this role, and TOCO
+now holds it properly rather than only handling an intent.
+
 **Command matching**
 
 Skills match on the verb at the start or on whole words, never on substrings,

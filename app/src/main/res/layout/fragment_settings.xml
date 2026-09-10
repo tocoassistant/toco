@@ -60,6 +60,25 @@
                 android:hint="@string/wake_words_hint" />
 
             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/assist_heading"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text="@string/assist_note"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp"
+                android:lineSpacingExtra="3dp" />
+
+            <TextView
                 android:id="@+id/tvWakeNote"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

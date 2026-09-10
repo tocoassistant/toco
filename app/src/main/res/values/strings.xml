@@ -79,4 +79,11 @@ While the screen is locked TOCO can still change volume, toggle the flashlight, 
 If listening stops on its own, set TOCO to Unrestricted in your battery settings — the system killed the service.</string>
     <string name="wake_greeting">How can I help you?</string>
     <string name="wake_no_ai">I can only run device commands right now. Add a Gemini key to answer questions.</string>
+    <string name="ai_status">Gemini</string>
+    <string name="ai_ready_desc">A key is compiled into this build, so TOCO can answer questions.</string>
+    <string name="ai_missing_desc">No key in this build. Add GEMINI_API_KEY as a GitHub repository secret, then rebuild. Device commands still work.</string>
+    <string name="assist_heading">ASSISTANT ROLE</string>
+    <string name="assist_note">To make long-pressing home open TOCO: Settings → Apps → Default apps → Digital assistant app → TOCO.
+
+Some phones put this under Settings → Additional settings → Gestures. TOCO must have microphone access first.</string>
 </resources>

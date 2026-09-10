@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.toco.ai.R
+import com.toco.ai.ai.Ai
 import com.toco.ai.core.Prefs
 import com.toco.ai.service.WakeWordService
 import com.toco.ai.util.Permissions
@@ -110,6 +111,22 @@ class SettingsFragment : Fragment() {
             } else {
                 micPermission.launch(Manifest.permission.RECORD_AUDIO)
             }
+        }
+
+        // Read-only row: makes a missing key obvious instead of surfacing as
+        // "I have no module for that" during a conversation.
+        addToggle(
+            list, inflater,
+            label = getString(R.string.ai_status),
+            description = getString(
+                if (Ai.isReady()) R.string.ai_ready_desc else R.string.ai_missing_desc
+            ),
+            on = Ai.isReady()
+        ) {
+            toast(
+                if (Ai.isReady()) "Gemini key is present in this build."
+                else "No key in this build. Add GEMINI_API_KEY as a GitHub secret."
+            )
         }
 
         addToggle(
