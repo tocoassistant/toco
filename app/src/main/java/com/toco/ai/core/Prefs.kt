@@ -46,6 +46,27 @@ class Prefs(context: Context) {
             .filter { it.isNotEmpty() }
             .sortedByDescending { it.length }
 
+    /** Announce missed calls when the user comes back to the phone. */
+    var missedCallAlerts: Boolean
+        get() = sp.getBoolean(KEY_MISSED, false)
+        set(value) = sp.edit().putBoolean(KEY_MISSED, value).apply()
+
+    /**
+     * Timestamp of the newest missed call already announced, so unlocking
+     * twice doesn't repeat the same calls.
+     */
+    var lastMissedCallSeen: Long
+        get() = sp.getLong(KEY_MISSED_SEEN, System.currentTimeMillis())
+        set(value) = sp.edit().putLong(KEY_MISSED_SEEN, value).apply()
+
+    /**
+     * Speak on the call-audio stream instead of media, the way a game's voice
+     * chat does: loudspeaker output, but the volume keys adjust call volume.
+     */
+    var callVolumeVoice: Boolean
+        get() = sp.getBoolean(KEY_CALL_VOLUME, true)
+        set(value) = sp.edit().putBoolean(KEY_CALL_VOLUME, value).apply()
+
     private companion object {
         const val KEY_NAME = "user_name"
         const val KEY_CC = "country_code"
@@ -54,5 +75,8 @@ class Prefs(context: Context) {
         const val KEY_WAKE = "wake_enabled"
         const val KEY_WAKE_WORDS = "wake_words"
         const val DEFAULT_WAKE = "hey toco, toco, hi toco, assistant, ok toco"
+        const val KEY_MISSED = "missed_call_alerts"
+        const val KEY_MISSED_SEEN = "missed_call_seen"
+        const val KEY_CALL_VOLUME = "call_volume_voice"
     }
 }

@@ -86,4 +86,14 @@ If listening stops on its own, set TOCO to Unrestricted in your battery settings
     <string name="assist_note">To make long-pressing home open TOCO: Settings → Apps → Default apps → Digital assistant app → TOCO.
 
 Some phones put this under Settings → Additional settings → Gestures. TOCO must have microphone access first.</string>
+    <string name="missed_channel_status">Missed call watch</string>
+    <string name="missed_channel_alert">Missed calls</string>
+    <string name="missed_status_title">TOCO</string>
+    <string name="missed_status_text">Will tell you about missed calls when you unlock</string>
+    <string name="missed_one">Missed call</string>
+    <string name="missed_many">%1$d missed calls</string>
+    <string name="missed_toggle">Missed call alerts</string>
+    <string name="missed_toggle_desc">When you unlock your phone, TOCO tells you who called while you were away. Needs call log access.</string>
+    <string name="call_volume_toggle">Use call volume</string>
+    <string name="call_volume_desc">TOCO speaks on the call audio stream like a game voice chat: loudspeaker output, but the volume keys adjust call volume instead of media. Turn off to use media volume.</string>
 </resources>

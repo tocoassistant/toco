@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioManager
 import com.toco.ai.skill.Skill
 import com.toco.ai.skill.SkillResult
+import com.toco.ai.core.Prefs
 import com.toco.ai.util.CommandText
 
 /**
@@ -37,7 +38,16 @@ class VolumeSkill : Skill {
             ?: return SkillResult.Failed("Audio service unavailable.")
 
         val c = CommandText.normalize(command)
-        val stream = AudioManager.STREAM_MUSIC
+
+        // "toco volume up" adjusts TOCO's own voice, which lives on the call
+        // stream when that setting is on. Everything else means media volume,
+        // since that is what the user is usually listening to.
+        val aboutToco = CommandText.hasAnyPhrase(command, listOf("toco", "your", "voice"))
+        val stream = if (aboutToco && Prefs(context).callVolumeVoice) {
+            AudioManager.STREAM_VOICE_CALL
+        } else {
+            AudioManager.STREAM_MUSIC
+        }
         val max = audio.getStreamMaxVolume(stream)
 
         // An explicit percentage wins over up/down.

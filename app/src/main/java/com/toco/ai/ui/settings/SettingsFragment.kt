@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import com.toco.ai.R
 import com.toco.ai.ai.Ai
 import com.toco.ai.core.Prefs
+import com.toco.ai.call.CallWatcherService
 import com.toco.ai.service.WakeWordService
 import com.toco.ai.util.Permissions
 
@@ -28,6 +29,16 @@ import com.toco.ai.util.Permissions
 class SettingsFragment : Fragment() {
 
     private lateinit var prefs: Prefs
+
+    private val callLogPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                enableMissedAlerts(true)
+            } else {
+                toast("Missed call alerts need call log access.")
+            }
+            renderToggles(requireView())
+        }
 
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -113,6 +124,23 @@ class SettingsFragment : Fragment() {
             }
         }
 
+        addToggle(
+            list, inflater,
+            label = getString(R.string.missed_toggle),
+            description = getString(R.string.missed_toggle_desc),
+            on = prefs.missedCallAlerts
+        ) {
+            if (prefs.missedCallAlerts) {
+                enableMissedAlerts(false)
+                renderToggles(root)
+            } else if (Permissions.has(requireContext(), Manifest.permission.READ_CALL_LOG)) {
+                enableMissedAlerts(true)
+                renderToggles(root)
+            } else {
+                callLogPermission.launch(Manifest.permission.READ_CALL_LOG)
+            }
+        }
+
         // Read-only row: makes a missing key obvious instead of surfacing as
         // "I have no module for that" during a conversation.
         addToggle(
@@ -127,6 +155,16 @@ class SettingsFragment : Fragment() {
                 if (Ai.isReady()) "Gemini key is present in this build."
                 else "No key in this build. Add GEMINI_API_KEY as a GitHub secret."
             )
+        }
+
+        addToggle(
+            list, inflater,
+            label = getString(R.string.call_volume_toggle),
+            description = getString(R.string.call_volume_desc),
+            on = prefs.callVolumeVoice
+        ) {
+            prefs.callVolumeVoice = !prefs.callVolumeVoice
+            renderToggles(root)
         }
 
         addToggle(
@@ -174,6 +212,19 @@ class SettingsFragment : Fragment() {
             toast("Listening. Set TOCO to Unrestricted in battery settings so it survives.")
         } else {
             WakeWordService.stop(requireContext())
+        }
+    }
+
+    private fun enableMissedAlerts(enabled: Boolean) {
+        prefs.missedCallAlerts = enabled
+
+        if (enabled) {
+            // Only report calls from now on, not the entire call history.
+            prefs.lastMissedCallSeen = System.currentTimeMillis()
+            CallWatcherService.start(requireContext())
+            toast("TOCO will tell you about missed calls when you unlock.")
+        } else {
+            CallWatcherService.stop(requireContext())
         }
     }
 

@@ -67,6 +67,13 @@ object PermissionManager {
             permissions = listOf(Manifest.permission.CALL_PHONE)
         ),
         Capability(
+            id = "call_log",
+            label = "Call log",
+            explanation = "Lets TOCO tell you who called while you were away.",
+            gate = Gate.RUNTIME,
+            permissions = listOf(Manifest.permission.READ_CALL_LOG)
+        ),
+        Capability(
             id = "camera",
             label = "Camera",
             explanation = "Needed only if you ask TOCO to open the camera and capture.",
