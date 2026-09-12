@@ -16,7 +16,9 @@ import androidx.fragment.app.Fragment
 import com.toco.ai.R
 import com.toco.ai.ai.Ai
 import com.toco.ai.core.Prefs
+import com.toco.ai.core.Voice
 import com.toco.ai.call.CallWatcherService
+import com.toco.ai.call.MissedCallReader
 import com.toco.ai.service.WakeWordService
 import com.toco.ai.util.Permissions
 
@@ -128,7 +130,8 @@ class SettingsFragment : Fragment() {
             list, inflater,
             label = getString(R.string.missed_toggle),
             description = getString(R.string.missed_toggle_desc),
-            on = prefs.missedCallAlerts
+            on = prefs.missedCallAlerts,
+            onLongClick = { diagnoseMissedCalls() }
         ) {
             if (prefs.missedCallAlerts) {
                 enableMissedAlerts(false)
@@ -159,12 +162,13 @@ class SettingsFragment : Fragment() {
 
         addToggle(
             list, inflater,
-            label = getString(R.string.call_volume_toggle),
-            description = getString(R.string.call_volume_desc),
-            on = prefs.callVolumeVoice
+            label = getString(R.string.loud_voice_toggle),
+            description = getString(R.string.loud_voice_desc),
+            on = prefs.loudVoice
         ) {
-            prefs.callVolumeVoice = !prefs.callVolumeVoice
+            prefs.loudVoice = !prefs.loudVoice
             renderToggles(root)
+            Voice.speak(requireContext(), "This is how loud I will be.")
         }
 
         addToggle(
@@ -178,12 +182,48 @@ class SettingsFragment : Fragment() {
         }
     }
 
+    /**
+     * Reports exactly why missed-call alerts are or aren't working, instead of
+     * leaving "nothing happened" to be guessed at. Checks each precondition in
+     * the order it would actually fail.
+     */
+    private fun diagnoseMissedCalls() {
+        val context = requireContext()
+
+        if (!prefs.missedCallAlerts) {
+            toast("Missed call alerts are OFF. Tap the row to turn them on.")
+            return
+        }
+
+        if (!Permissions.has(context, Manifest.permission.READ_CALL_LOG)) {
+            toast("Call log permission is missing. Tap the row to grant it.")
+            return
+        }
+
+        // Look back a day regardless of what has already been announced, so
+        // the check works even after an alert was shown.
+        val dayAgo = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+        val recent = MissedCallReader.since(context, dayAgo)
+
+        if (recent.isEmpty()) {
+            toast("Working, but no missed calls in the last 24 hours to report.")
+            return
+        }
+
+        val ring = Voice.ringVolumePercent(context)
+        val volumeNote = if (ring == 0) " Ring volume is 0, so you will see it but not hear it." else ""
+
+        toast("Found " + recent.size + " missed call(s) in 24h. Speaking now." + volumeNote)
+        Voice.speak(context, MissedCallReader.announcement(recent))
+    }
+
     private fun addToggle(
         parent: LinearLayout,
         inflater: LayoutInflater,
         label: String,
         description: String,
         on: Boolean,
+        onLongClick: (() -> Unit)? = null,
         onClick: () -> Unit
     ) {
         val row = inflater.inflate(R.layout.item_toggle, parent, false)
@@ -201,6 +241,12 @@ class SettingsFragment : Fragment() {
         )
 
         row.setOnClickListener { onClick() }
+        if (onLongClick != null) {
+            row.setOnLongClickListener {
+                onLongClick()
+                true
+            }
+        }
         parent.addView(row)
     }
 

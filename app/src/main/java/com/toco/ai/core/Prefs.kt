@@ -60,12 +60,13 @@ class Prefs(context: Context) {
         set(value) = sp.edit().putLong(KEY_MISSED_SEEN, value).apply()
 
     /**
-     * Speak on the call-audio stream instead of media, the way a game's voice
-     * chat does: loudspeaker output, but the volume keys adjust call volume.
+     * Speak at ringtone loudness on the ring stream instead of media volume.
+     * On by default, because media volume is usually set low for background
+     * audio and made TOCO hard to hear.
      */
-    var callVolumeVoice: Boolean
-        get() = sp.getBoolean(KEY_CALL_VOLUME, true)
-        set(value) = sp.edit().putBoolean(KEY_CALL_VOLUME, value).apply()
+    var loudVoice: Boolean
+        get() = sp.getBoolean(KEY_LOUD_VOICE, true)
+        set(value) = sp.edit().putBoolean(KEY_LOUD_VOICE, value).apply()
 
     private companion object {
         const val KEY_NAME = "user_name"
@@ -77,6 +78,6 @@ class Prefs(context: Context) {
         const val DEFAULT_WAKE = "hey toco, toco, hi toco, assistant, ok toco"
         const val KEY_MISSED = "missed_call_alerts"
         const val KEY_MISSED_SEEN = "missed_call_seen"
-        const val KEY_CALL_VOLUME = "call_volume_voice"
+        const val KEY_LOUD_VOICE = "loud_voice"
     }
 }

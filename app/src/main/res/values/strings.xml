@@ -93,7 +93,7 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="missed_one">Missed call</string>
     <string name="missed_many">%1$d missed calls</string>
     <string name="missed_toggle">Missed call alerts</string>
-    <string name="missed_toggle_desc">When you unlock your phone, TOCO tells you who called while you were away. Needs call log access.</string>
-    <string name="call_volume_toggle">Use call volume</string>
-    <string name="call_volume_desc">TOCO speaks on the call audio stream like a game voice chat: loudspeaker output, but the volume keys adjust call volume instead of media. Turn off to use media volume.</string>
+    <string name="missed_toggle_desc">When you unlock your phone, TOCO tells you who called while you were away. Needs call log access. Long-press this row to test it.</string>
+    <string name="loud_voice_toggle">Loud voice</string>
+    <string name="loud_voice_desc">TOCO speaks at ringtone loudness on the ring stream, so it is clear without turning media volume up. While TOCO talks the volume keys show Ring. If your phone is on silent, ring volume is 0 and TOCO will not be heard.</string>
 </resources>

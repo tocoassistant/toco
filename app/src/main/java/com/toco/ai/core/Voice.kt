@@ -4,37 +4,32 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
 
 /**
  * Single shared TTS engine. Held app-wide so it isn't re-initialised on every
  * spoken line (which is what causes the classic "first word gets cut" bug).
  *
- * Audio routing works the way a game's voice chat does. Speaking on
- * STREAM_VOICE_CALL alone would send TOCO to the earpiece — the small speaker
- * you hold to your ear — making it quieter, not louder. What actually produces
- * "loudspeaker, but the volume rocker shows call volume" is the combination:
+ * TOCO speaks on STREAM_RING.
  *
- *   1. AudioManager mode -> MODE_IN_COMMUNICATION
- *   2. speakerphone forced ON, which overrides the earpiece routing
- *   3. TTS output on STREAM_VOICE_CALL
+ * Why not the call stream: that required forcing the device into
+ * MODE_IN_COMMUNICATION and switching speakerphone on, because the voice-call
+ * stream otherwise routes to the earpiece. That mode is global — every other
+ * app sees it — and if it ever failed to restore, the volume keys stayed stuck
+ * on call volume. Too much blast radius for a volume preference.
  *
- * The mode is global to the device, so it MUST be restored once TOCO stops
- * talking — otherwise the volume keys would keep adjusting call volume forever
- * and other apps would misbehave. Restoration happens on the utterance
- * callback, with a timeout as a backstop in case the engine never reports done.
+ * The ring stream needs none of that. It already plays out of the loudspeaker
+ * at ringtone loudness, and the volume keys show "Ring" while TOCO talks.
+ *
+ * One honest consequence: with the phone on silent, ring volume is zero and
+ * TOCO will be inaudible. That is the same rule your ringtone follows, and the
+ * settings screen reports it rather than leaving you guessing.
  */
 object Voice {
 
     private var tts: TextToSpeech? = null
     private var ready = false
     private val queue = mutableListOf<String>()
-
-    /** Audio state captured before TOCO started talking, restored afterwards. */
-    private var previousMode: Int? = null
-    private var previousSpeaker: Boolean? = null
-    private var speaking = 0
 
     private var appContext: Context? = null
 
@@ -46,7 +41,6 @@ object Voice {
             ready = status == TextToSpeech.SUCCESS
             if (ready) {
                 tts?.language = Locale.US
-                attachListener()
                 queue.forEach { say(it) }
                 queue.clear()
             }
@@ -62,96 +56,36 @@ object Voice {
         if (ready) say(text) else queue += text
     }
 
-    private fun attachListener() {
-        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {}
-
-            override fun onDone(utteranceId: String?) {
-                finishedOne()
-            }
-
-            @Deprecated("Required by the base class")
-            override fun onError(utteranceId: String?) {
-                finishedOne()
-            }
-        })
-    }
-
     private fun say(text: String) {
         val context = appContext ?: return
-        val prefs = Prefs(context)
-
-        if (prefs.callVolumeVoice) {
-            beginCallAudio(context)
-        }
 
         val params = Bundle()
-        if (prefs.callVolumeVoice) {
-            params.putInt(
-                TextToSpeech.Engine.KEY_PARAM_STREAM,
-                AudioManager.STREAM_VOICE_CALL
-            )
-        }
-
-        speaking++
+        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream(context))
         tts?.speak(text, TextToSpeech.QUEUE_ADD, params, UTTERANCE_ID)
     }
 
-    private fun finishedOne() {
-        speaking--
-        if (speaking <= 0) {
-            speaking = 0
-            endCallAudio()
-        }
-    }
+    /** Ring stream by default; media only if the user turned the setting off. */
+    private fun stream(context: Context): Int =
+        if (Prefs(context).loudVoice) AudioManager.STREAM_RING
+        else AudioManager.STREAM_MUSIC
 
-    // ---------------- audio routing ----------------
-
-    private fun beginCallAudio(context: Context) {
-        // Only capture the original state on the FIRST line; a queued second
-        // line must not overwrite it with our own settings.
-        if (previousMode != null) return
-
-        val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
-
-        try {
-            previousMode = audio.mode
-            previousSpeaker = audio.isSpeakerphoneOn
-
-            audio.mode = AudioManager.MODE_IN_COMMUNICATION
-            // Without this the voice-call stream goes to the earpiece.
-            audio.isSpeakerphoneOn = true
-        } catch (e: Exception) {
-            previousMode = null
-            previousSpeaker = null
-        }
-    }
-
-    private fun endCallAudio() {
-        val context = appContext ?: return
-        val mode = previousMode ?: return
-        val speaker = previousSpeaker
-
+    /**
+     * Current ring volume as a percentage. Zero means the phone is silenced
+     * and nothing TOCO says will be heard.
+     */
+    fun ringVolumePercent(context: Context): Int {
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-        previousMode = null
-        previousSpeaker = null
-
-        try {
-            audio?.mode = mode
-            if (speaker != null) audio?.isSpeakerphoneOn = speaker
-        } catch (e: Exception) {
-            // Device refused; nothing useful to do, and leaving it is worse
-            // than trying, so this is only swallowed after the attempt.
-        }
+            ?: return -1
+        val max = audio.getStreamMaxVolume(AudioManager.STREAM_RING)
+        if (max <= 0) return -1
+        return audio.getStreamVolume(AudioManager.STREAM_RING) * 100 / max
     }
 
     fun shutdown() {
-        endCallAudio()
         tts?.stop()
         tts?.shutdown()
         tts = null
         ready = false
-        speaking = 0
     }
 
     private const val UTTERANCE_ID = "toco"

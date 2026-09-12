@@ -43,8 +43,8 @@ class VolumeSkill : Skill {
         // stream when that setting is on. Everything else means media volume,
         // since that is what the user is usually listening to.
         val aboutToco = CommandText.hasAnyPhrase(command, listOf("toco", "your", "voice"))
-        val stream = if (aboutToco && Prefs(context).callVolumeVoice) {
-            AudioManager.STREAM_VOICE_CALL
+        val stream = if (aboutToco && Prefs(context).loudVoice) {
+            AudioManager.STREAM_RING
         } else {
             AudioManager.STREAM_MUSIC
         }
