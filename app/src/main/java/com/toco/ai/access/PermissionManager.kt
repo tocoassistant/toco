@@ -74,6 +74,14 @@ object PermissionManager {
             permissions = listOf(Manifest.permission.READ_CALL_LOG)
         ),
         Capability(
+            id = "phone_state",
+            label = "Phone status",
+            explanation = "Lets TOCO notice a call was missed as it happens, so the " +
+                "alert is waiting on your lock screen.",
+            gate = Gate.RUNTIME,
+            permissions = listOf("android.permission.READ_PHONE_STATE")
+        ),
+        Capability(
             id = "camera",
             label = "Camera",
             explanation = "Needed only if you ask TOCO to open the camera and capture.",

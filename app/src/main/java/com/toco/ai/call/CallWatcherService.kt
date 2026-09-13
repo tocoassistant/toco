@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -36,6 +37,7 @@ import com.toco.ai.ui.MainActivity
 class CallWatcherService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
+    private var overlay: MissedCallOverlay? = null
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -78,6 +80,8 @@ class CallWatcherService : Service() {
             // Never registered, or already gone.
         }
         handler.removeCallbacksAndMessages(null)
+        overlay?.dismiss()
+        overlay = null
         super.onDestroy()
     }
 
@@ -101,11 +105,56 @@ class CallWatcherService : Service() {
         // Mark as seen immediately so a second unlock doesn't repeat it.
         prefs.lastMissedCallSeen = calls.maxOf { it.time }
 
-        postMissedNotification(calls)
+        MissedCallNotifier.post(this, calls)
+
+        overlay?.dismiss()
+        overlay = MissedCallOverlay(this).also { it.show(calls) }
 
         if (prefs.voiceReplies) {
-            Voice.speak(this, MissedCallReader.announcement(calls))
+            boostThenSpeak(MissedCallReader.announcement(calls))
         }
+    }
+
+    /**
+     * Raises ring volume to maximum for the announcement, then puts it back.
+     *
+     * Without this the announcement is as quiet as whatever the ringer happens
+     * to be set to, which defeats the point of speaking at all. The original
+     * level is restored on a delay, because TTS gives no reliable "finished"
+     * signal across every engine — an unrestored volume would be a far worse
+     * bug than an announcement that is briefly loud.
+     *
+     * Changing ring volume is refused while Do Not Disturb is on unless the
+     * app holds notification policy access, so the failure is caught and the
+     * announcement still plays at the current level.
+     */
+    private fun boostThenSpeak(text: String) {
+        val audio = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+
+        var restore: Int? = null
+        try {
+            if (audio != null) {
+                val max = audio.getStreamMaxVolume(AudioManager.STREAM_RING)
+                val current = audio.getStreamVolume(AudioManager.STREAM_RING)
+                if (current < max) {
+                    restore = current
+                    audio.setStreamVolume(AudioManager.STREAM_RING, max, 0)
+                }
+            }
+        } catch (e: Exception) {
+            restore = null
+        }
+
+        Voice.speak(this, text)
+
+        val previous = restore ?: return
+        handler.postDelayed({
+            try {
+                audio?.setStreamVolume(AudioManager.STREAM_RING, previous, 0)
+            } catch (e: Exception) {
+                // DND turned on mid-announcement; nothing to do.
+            }
+        }, RESTORE_VOLUME_MS)
     }
 
     // ---------------- notifications ----------------
@@ -125,14 +174,7 @@ class CallWatcherService : Service() {
             ).apply { setShowBadge(false) }
         )
 
-        // The actual alert, which should be noticed.
-        manager.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_ALERT,
-                getString(R.string.missed_channel_alert),
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-        )
+        MissedCallNotifier.ensureChannel(this)
     }
 
     private fun builder(channel: String): Notification.Builder =
@@ -160,46 +202,13 @@ class CallWatcherService : Service() {
             .build()
     }
 
-    private fun postMissedNotification(calls: List<MissedCall>) {
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-            ?: return
-
-        val open = PendingIntent.getActivity(
-            this,
-            1,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val title = if (calls.size == 1) {
-            getString(R.string.missed_one)
-        } else {
-            getString(R.string.missed_many, calls.size)
-        }
-
-        val notification = builder(CHANNEL_ALERT)
-            .setContentTitle(title)
-            .setContentText(calls.last().label())
-            .setStyle(
-                Notification.BigTextStyle()
-                    .bigText(MissedCallReader.notificationText(calls))
-            )
-            .setSmallIcon(android.R.drawable.stat_notify_missed_call)
-            .setContentIntent(open)
-            .setAutoCancel(true)
-            .build()
-
-        manager.notify(ALERT_ID, notification)
-    }
-
     companion object {
         const val ACTION_STOP = "com.toco.ai.MISSED_STOP"
 
         private const val CHANNEL_STATUS = "toco_missed_status"
-        private const val CHANNEL_ALERT = "toco_missed_alert"
         private const val NOTIFICATION_ID = 51
-        private const val ALERT_ID = 52
         private const val ANNOUNCE_DELAY_MS = 1200L
+        private const val RESTORE_VOLUME_MS = 9000L
 
         fun start(context: Context) {
             val intent = Intent(context, CallWatcherService::class.java)

@@ -18,6 +18,14 @@
     <!-- Reading the call log is how missed calls are found; the system log is
          authoritative even if TOCO was not running when the phone rang. -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
+    <!-- Detects the ring-then-idle sequence so the missed-call notification is
+         already waiting on the lock screen. -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- The floating missed-call card. Granted by the user in system settings;
+         without it TOCO falls back to the notification only. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -84,6 +92,14 @@
              gesture, opens TOCO listening. This is the closest Android
              equivalent to holding the side button for Siri. -->
         <!-- No microphone, no polling: only wakes on screen-on / unlock. -->
+        <receiver
+            android:name=".call.PhoneStateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".call.CallWatcherService"
             android:exported="false"

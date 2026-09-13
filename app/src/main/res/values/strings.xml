@@ -96,4 +96,14 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="missed_toggle_desc">When you unlock your phone, TOCO tells you who called while you were away. Needs call log access. Long-press this row to test it.</string>
     <string name="loud_voice_toggle">Loud voice</string>
     <string name="loud_voice_desc">TOCO speaks at ringtone loudness on the ring stream, so it is clear without turning media volume up. While TOCO talks the volume keys show Ring. If your phone is on silent, ring volume is 0 and TOCO will not be heard.</string>
+    <string name="overlay_one">You missed 1 call</string>
+    <string name="overlay_many">You missed %1$d calls</string>
+    <string name="overlay_more">+%1$d more</string>
+    <string name="overlay_call">Call</string>
+    <string name="overlay_ignore_all">Ignore All</string>
+    <string name="overlay_close">\u2715</string>
+    <string name="overlay_one_call">1 call</string>
+    <string name="overlay_n_calls">%1$d calls</string>
+    <string name="overlay_toggle">Missed call overlay</string>
+    <string name="overlay_toggle_desc">Show a floating card on your home screen after unlocking, with tap-to-call buttons. Needs Display over other apps.</string>
 </resources>
