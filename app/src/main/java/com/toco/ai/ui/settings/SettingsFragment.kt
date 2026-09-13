@@ -1,6 +1,8 @@
 package com.toco.ai.ui.settings
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,6 +20,7 @@ import com.toco.ai.ai.Ai
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
 import com.toco.ai.call.CallWatcherService
+import com.toco.ai.call.MissedCallOverlay
 import com.toco.ai.call.MissedCallReader
 import com.toco.ai.service.WakeWordService
 import com.toco.ai.util.Permissions
@@ -112,7 +115,8 @@ class SettingsFragment : Fragment() {
         addToggle(
             list, inflater,
             label = getString(R.string.wake_toggle),
-            description = getString(R.string.wake_toggle_desc),
+            description = WakeWordService.lastError
+                ?: getString(R.string.wake_toggle_desc),
             on = prefs.wakeEnabled
         ) {
             if (prefs.wakeEnabled) {
@@ -200,6 +204,22 @@ class SettingsFragment : Fragment() {
             return
         }
 
+        CallWatcherService.lastError?.let {
+            toast("Watcher failed: " + it)
+            return
+        }
+
+        if (!CallWatcherService.running) {
+            toast("Watcher is not running. Restarting it now.")
+            CallWatcherService.start(context)
+            return
+        }
+
+        if (!CallWatcherService.registered) {
+            toast("Running, but not listening for unlock. Toggle alerts off and on.")
+            return
+        }
+
         // Look back a day regardless of what has already been announced, so
         // the check works even after an alert was shown.
         val dayAgo = System.currentTimeMillis() - 24L * 60 * 60 * 1000
@@ -213,7 +233,21 @@ class SettingsFragment : Fragment() {
         val ring = Voice.ringVolumePercent(context)
         val volumeNote = if (ring == 0) " Ring volume is 0, so you will see it but not hear it." else ""
 
-        toast("Found " + recent.size + " missed call(s) in 24h. Speaking now." + volumeNote)
+        // Test the overlay on the same tap, so a missing overlay permission
+        // shows up here rather than only during a real missed call.
+        val overlay = MissedCallOverlay(context)
+        if (!overlay.canShow()) {
+            toast("Found " + recent.size + " missed call(s), but \"Display over other apps\" is off, so no overlay.")
+            Voice.speak(context, MissedCallReader.announcement(recent))
+            startActivity(
+                Intent("android.settings.action.MANAGE_OVERLAY_PERMISSION")
+                    .setData(Uri.parse("package:" + context.packageName))
+            )
+            return
+        }
+
+        toast("Found " + recent.size + " missed call(s) in 24h." + volumeNote)
+        overlay.show(recent)
         Voice.speak(context, MissedCallReader.announcement(recent))
     }
 

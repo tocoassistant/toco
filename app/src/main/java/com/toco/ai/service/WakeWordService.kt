@@ -92,7 +92,7 @@ class WakeWordService : Service() {
             }
             ACTION_TALK -> {
                 // Tile or notification tap: skip the wake word entirely.
-                startForeground(NOTIFICATION_ID, notification(listeningForCommand = true))
+                if (!goForeground(listeningForCommand = true)) return START_NOT_STICKY
                 running = true
                 state = State.AWAKE
                 awaitingCommand = true
@@ -107,7 +107,7 @@ class WakeWordService : Service() {
             return START_NOT_STICKY
         }
 
-        startForeground(NOTIFICATION_ID, notification(listeningForCommand = false))
+        if (!goForeground(listeningForCommand = false)) return START_NOT_STICKY
 
         if (!running) {
             running = true
@@ -506,6 +506,24 @@ class WakeWordService : Service() {
         return Notification.Action.Builder(icon, title, intent).build()
     }
 
+    /**
+     * Android 14 refuses a microphone foreground service started from the
+     * background, and throws rather than returning an error. Unhandled, that
+     * takes the whole service down with no explanation — so the failure is
+     * caught, recorded, and reported the next time the user checks.
+     */
+    private fun goForeground(listeningForCommand: Boolean): Boolean =
+        try {
+            startForeground(NOTIFICATION_ID, notification(listeningForCommand))
+            lastError = null
+            true
+        } catch (e: Exception) {
+            lastError = "Couldn't start listening: " + e.message
+            Prefs(this).wakeEnabled = false
+            stopSelf()
+            false
+        }
+
     private fun updateNotification(listeningForCommand: Boolean) {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
         manager?.notify(NOTIFICATION_ID, notification(listeningForCommand))
@@ -513,6 +531,10 @@ class WakeWordService : Service() {
 
     companion object {
         const val ACTION_TALK = "com.toco.ai.WAKE_TALK"
+
+        /** Why listening stopped, if it did. Null when healthy. */
+        var lastError: String? = null
+            private set
         const val ACTION_STOP = "com.toco.ai.WAKE_STOP"
 
         private const val CHANNEL_ID = "toco_wake"

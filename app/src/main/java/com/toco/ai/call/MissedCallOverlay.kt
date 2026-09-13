@@ -41,6 +41,12 @@ class MissedCallOverlay(private val context: Context) {
     private var expanded = false
     private var calls: List<MissedCall> = emptyList()
 
+    /** How many times each caller rang, keyed the same way as [grouped]. */
+    private var counts: Map<String, Int> = emptyMap()
+
+    /** Total calls before grouping, which is what the title reports. */
+    private var totalCalls = 0
+
     private val windowManager: WindowManager? =
         context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
 
@@ -48,7 +54,14 @@ class MissedCallOverlay(private val context: Context) {
         if (Build.VERSION.SDK_INT >= 23) Settings.canDrawOverlays(context) else true
 
     fun show(missed: List<MissedCall>) {
-        if (missed.isEmpty() || !canShow()) return
+        if (missed.isEmpty()) return
+
+        if (!canShow()) {
+            // Say so instead of doing nothing. Without this the feature looks
+            // broken when it is actually one ungranted permission away.
+            OverlayPermissionNotice.post(context)
+            return
+        }
 
         dismiss()
         calls = grouped(missed)
@@ -96,14 +109,26 @@ class MissedCallOverlay(private val context: Context) {
      * Several calls from one number become one row with a count, which is what
      * the user cares about — "Alex, 3 calls", not three identical rows.
      */
-    private fun grouped(missed: List<MissedCall>): List<MissedCall> =
-        missed.groupBy { it.number.ifBlank { it.name ?: "unknown" } }
-            .map { (_, group) -> group.maxByOrNull { it.time }!! to group.size }
-            .sortedByDescending { it.first.time }
-            .map { it.first }
+    private fun grouped(missed: List<MissedCall>): List<MissedCall> {
+        val byCaller = missed.groupBy { key(it) }
+
+        // Keep the counts. The previous version computed them and discarded
+        // them, then recounted against the already-deduplicated list, so every
+        // row reported "1 call" no matter how many times someone rang.
+        counts = byCaller.mapValues { (_, group) -> group.size }
+        totalCalls = missed.size
+
+        return byCaller
+            .map { (_, group) -> group.maxByOrNull { it.time }!! }
+            .sortedByDescending { it.time }
+    }
+
+    /** Blank numbers group under the name so unknown callers don't all merge. */
+    private fun key(call: MissedCall): String =
+        call.number.ifBlank { call.name ?: "unknown" }
 
     private fun countFor(call: MissedCall): Int =
-        calls.count { it.number == call.number }.coerceAtLeast(1)
+        counts[key(call)] ?: 1
 
     private fun render() {
         val view = root ?: return
@@ -143,7 +168,7 @@ class MissedCallOverlay(private val context: Context) {
         ignoreButton.setOnClickListener { ignoreAll() }
     }
 
-    private fun rawCount(): Int = calls.sumOf { countFor(it) }
+    private fun rawCount(): Int = totalCalls
 
     private fun row(inflater: LayoutInflater, parent: LinearLayout, call: MissedCall): View {
         val view = inflater.inflate(R.layout.item_overlay_caller, parent, false)

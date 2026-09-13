@@ -60,16 +60,42 @@ class CallWatcherService : Service() {
         val filter = IntentFilter()
         filter.addAction(Intent.ACTION_USER_PRESENT)
         filter.addAction(Intent.ACTION_SCREEN_ON)
-        registerReceiver(screenReceiver, filter)
+
+        try {
+            // Android 14 throws SecurityException unless the export intent is
+            // stated explicitly. Omitting it killed this service the moment it
+            // started, which silently disabled every missed-call alert.
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                registerReceiver(screenReceiver, filter)
+            }
+            registered = true
+        } catch (e: Exception) {
+            registered = false
+            lastError = "Couldn't listen for unlock: " + e.message
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
+            running = false
             stopSelf()
             return START_NOT_STICKY
         }
 
-        startForeground(NOTIFICATION_ID, statusNotification())
+        try {
+            startForeground(NOTIFICATION_ID, statusNotification())
+            running = true
+        } catch (e: Exception) {
+            // A foreground service that cannot show its notification is killed
+            // by the system anyway; record why before going.
+            lastError = "Couldn't start: " + e.message
+            running = false
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         return START_STICKY
     }
 
@@ -82,6 +108,8 @@ class CallWatcherService : Service() {
         handler.removeCallbacksAndMessages(null)
         overlay?.dismiss()
         overlay = null
+        running = false
+        registered = false
         super.onDestroy()
     }
 
@@ -204,6 +232,20 @@ class CallWatcherService : Service() {
 
     companion object {
         const val ACTION_STOP = "com.toco.ai.MISSED_STOP"
+
+        /**
+         * Live state, so the settings screen can report whether this is
+         * actually running instead of assuming the preference reflects reality.
+         */
+        var running = false
+            private set
+
+        var registered = false
+            private set
+
+        /** Why it failed, if it did. Null when healthy. */
+        var lastError: String? = null
+            private set
 
         private const val CHANNEL_STATUS = "toco_missed_status"
         private const val NOTIFICATION_ID = 51

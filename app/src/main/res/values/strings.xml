@@ -106,4 +106,7 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="overlay_n_calls">%1$d calls</string>
     <string name="overlay_toggle">Missed call overlay</string>
     <string name="overlay_toggle_desc">Show a floating card on your home screen after unlocking, with tap-to-call buttons. Needs Display over other apps.</string>
+    <string name="overlay_help_channel">Overlay setup</string>
+    <string name="overlay_help_title">TOCO can\'t show the missed call card</string>
+    <string name="overlay_help_text">Tap here to allow Display over other apps. Until then TOCO will only send this notification.</string>
 </resources>
