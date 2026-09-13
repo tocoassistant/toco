@@ -48,7 +48,7 @@ class Prefs(context: Context) {
 
     /** Announce missed calls when the user comes back to the phone. */
     var missedCallAlerts: Boolean
-        get() = sp.getBoolean(KEY_MISSED, false)
+        get() = sp.getBoolean(KEY_MISSED, true)
         set(value) = sp.edit().putBoolean(KEY_MISSED, value).apply()
 
     /**
@@ -68,6 +68,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_LOUD_VOICE, true)
         set(value) = sp.edit().putBoolean(KEY_LOUD_VOICE, value).apply()
 
+    /** False until the first-run permission flow has been shown. */
+    var onboardingDone: Boolean
+        get() = sp.getBoolean(KEY_ONBOARDED, false)
+        set(value) = sp.edit().putBoolean(KEY_ONBOARDED, value).apply()
+
     private companion object {
         const val KEY_NAME = "user_name"
         const val KEY_CC = "country_code"
@@ -79,5 +84,6 @@ class Prefs(context: Context) {
         const val KEY_MISSED = "missed_call_alerts"
         const val KEY_MISSED_SEEN = "missed_call_seen"
         const val KEY_LOUD_VOICE = "loud_voice"
+        const val KEY_ONBOARDED = "onboarding_done"
     }
 }

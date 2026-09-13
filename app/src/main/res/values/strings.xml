@@ -89,11 +89,11 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="missed_channel_status">Missed call watch</string>
     <string name="missed_channel_alert">Missed calls</string>
     <string name="missed_status_title">TOCO</string>
-    <string name="missed_status_text">Will tell you about missed calls when you unlock</string>
+    <string name="missed_status_text">Waiting for you to unlock</string>
     <string name="missed_one">Missed call</string>
     <string name="missed_many">%1$d missed calls</string>
     <string name="missed_toggle">Missed call alerts</string>
-    <string name="missed_toggle_desc">When you unlock your phone, TOCO tells you who called while you were away. Needs call log access. Long-press this row to test it.</string>
+    <string name="missed_toggle_desc">After a call is missed, TOCO tells you who called the next time you unlock. Nothing runs in the background until a call is actually missed. Long-press to test.</string>
     <string name="loud_voice_toggle">Loud voice</string>
     <string name="loud_voice_desc">TOCO speaks at ringtone loudness on the ring stream, so it is clear without turning media volume up. While TOCO talks the volume keys show Ring. If your phone is on silent, ring volume is 0 and TOCO will not be heard.</string>
     <string name="overlay_one">You missed 1 call</string>
@@ -109,4 +109,18 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="overlay_help_channel">Overlay setup</string>
     <string name="overlay_help_title">TOCO can\'t show the missed call card</string>
     <string name="overlay_help_text">Tap here to allow Display over other apps. Until then TOCO will only send this notification.</string>
+    <string name="onboard_title">Set up TOCO</string>
+    <string name="onboard_body">TOCO needs a few permissions to be useful. Each one is explained, and you can skip any of them.</string>
+    <string name="onboard_phone">Phone \u0026 contacts</string>
+    <string name="onboard_phone_why">Call people by name, and tell you who called while you were away.</string>
+    <string name="onboard_notify">Notifications</string>
+    <string name="onboard_notify_why">Show missed calls on your lock screen.</string>
+    <string name="onboard_mic">Microphone</string>
+    <string name="onboard_mic_why">Speak commands instead of typing them.</string>
+    <string name="onboard_overlay">Display over other apps</string>
+    <string name="onboard_overlay_why">Show the missed call card on your home screen. Android only lets you grant this in settings.</string>
+    <string name="onboard_pending">Needed</string>
+    <string name="onboard_continue">Continue</string>
+    <string name="onboard_done">Start using TOCO</string>
+    <string name="onboard_skip">Skip for now</string>
 </resources>

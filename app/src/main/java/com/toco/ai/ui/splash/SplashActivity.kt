@@ -9,7 +9,9 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import com.toco.ai.R
+import com.toco.ai.core.Prefs
 import com.toco.ai.ui.MainActivity
+import com.toco.ai.ui.onboarding.OnboardingActivity
 
 class SplashActivity : AppCompatActivity() {
 
@@ -58,7 +60,13 @@ class SplashActivity : AppCompatActivity() {
 
     private fun goHome() {
         if (isFinishing || isDestroyed) return
-        startActivity(Intent(this, MainActivity::class.java))
+        // First run goes through setup; every run after that skips straight in.
+        val next = if (Prefs(this).onboardingDone) {
+            MainActivity::class.java
+        } else {
+            OnboardingActivity::class.java
+        }
+        startActivity(Intent(this, next))
         finish()
     }
 

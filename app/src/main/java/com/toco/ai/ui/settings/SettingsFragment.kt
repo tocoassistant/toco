@@ -130,22 +130,17 @@ class SettingsFragment : Fragment() {
             }
         }
 
+        // Read-only. Missed-call alerts are on by default and permissions are
+        // handled in setup and Access, so an on/off switch here would be a
+        // second, competing place to control the same thing.
         addToggle(
             list, inflater,
             label = getString(R.string.missed_toggle),
             description = getString(R.string.missed_toggle_desc),
-            on = prefs.missedCallAlerts,
+            on = Permissions.has(requireContext(), Manifest.permission.READ_CALL_LOG),
             onLongClick = { diagnoseMissedCalls() }
         ) {
-            if (prefs.missedCallAlerts) {
-                enableMissedAlerts(false)
-                renderToggles(root)
-            } else if (Permissions.has(requireContext(), Manifest.permission.READ_CALL_LOG)) {
-                enableMissedAlerts(true)
-                renderToggles(root)
-            } else {
-                callLogPermission.launch(Manifest.permission.READ_CALL_LOG)
-            }
+            diagnoseMissedCalls()
         }
 
         // Read-only row: makes a missing key obvious instead of surfacing as
@@ -164,14 +159,14 @@ class SettingsFragment : Fragment() {
             )
         }
 
+        // Also read-only: loud voice is the default and is what makes TOCO
+        // audible. Tapping previews it rather than switching it off.
         addToggle(
             list, inflater,
             label = getString(R.string.loud_voice_toggle),
             description = getString(R.string.loud_voice_desc),
-            on = prefs.loudVoice
+            on = true
         ) {
-            prefs.loudVoice = !prefs.loudVoice
-            renderToggles(root)
             Voice.speak(requireContext(), "This is how loud I will be.")
         }
 
@@ -194,29 +189,13 @@ class SettingsFragment : Fragment() {
     private fun diagnoseMissedCalls() {
         val context = requireContext()
 
-        if (!prefs.missedCallAlerts) {
-            toast("Missed call alerts are OFF. Tap the row to turn them on.")
-            return
-        }
-
         if (!Permissions.has(context, Manifest.permission.READ_CALL_LOG)) {
             toast("Call log permission is missing. Tap the row to grant it.")
             return
         }
 
         CallWatcherService.lastError?.let {
-            toast("Watcher failed: " + it)
-            return
-        }
-
-        if (!CallWatcherService.running) {
-            toast("Watcher is not running. Restarting it now.")
-            CallWatcherService.start(context)
-            return
-        }
-
-        if (!CallWatcherService.registered) {
-            toast("Running, but not listening for unlock. Toggle alerts off and on.")
+            toast("Last attempt failed: " + it)
             return
         }
 
@@ -301,8 +280,9 @@ class SettingsFragment : Fragment() {
         if (enabled) {
             // Only report calls from now on, not the entire call history.
             prefs.lastMissedCallSeen = System.currentTimeMillis()
-            CallWatcherService.start(requireContext())
-            toast("TOCO will tell you about missed calls when you unlock.")
+            // Deliberately NOT starting the service here. It runs only after a
+            // call is actually missed, so TOCO stays out of Running Apps.
+            toast("On. TOCO will tell you after a call is missed — nothing runs until then.")
         } else {
             CallWatcherService.stop(requireContext())
         }

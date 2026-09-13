@@ -9,7 +9,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.app.KeyguardManager
 import android.media.AudioManager
+import android.os.PowerManager
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -20,19 +22,24 @@ import com.toco.ai.core.Voice
 import com.toco.ai.ui.MainActivity
 
 /**
- * Tells the user about calls they missed, the moment they come back to the phone.
+ * Waits for the user to come back to the phone after a call was missed, then
+ * announces it and stops.
  *
- * Triggered by ACTION_USER_PRESENT (unlock) and ACTION_SCREEN_ON, which is
- * exactly the moment described: phone left charging, calls arrive, user
- * returns and presses power — TOCO speaks and posts a notification.
+ * This used to run permanently, which is wrong: it sat in Running Apps
+ * consuming battery even on days nobody called. Now it is event-driven —
+ * started by PhoneStateReceiver only once a call has actually been missed,
+ * and it calls stopSelf() the moment it has spoken.
  *
- * Why a foreground service: since Android 8 these two broadcasts cannot be
- * declared in the manifest. Only a running process can receive them. That is a
- * platform rule, not a design choice — the alternative is telling the user at
- * some later, arbitrary moment, which defeats the feature.
+ * So the lifetime is "missed call -> your next unlock", usually a few minutes.
+ * The rest of the time TOCO has no running process at all; the manifest
+ * receiver costs nothing until the phone rings.
  *
- * Unlike the wake-word service this one never touches the microphone and does
- * no polling, so its battery cost is negligible.
+ * A hard timeout stops it anyway if the phone is not unlocked for hours,
+ * because a service idling overnight is exactly the problem being fixed. The
+ * notification stays regardless, so nothing is lost.
+ *
+ * Why a service is needed at all: since Android 8, ACTION_USER_PRESENT cannot
+ * be declared in the manifest. Only a running process can receive it.
  */
 class CallWatcherService : Service() {
 
@@ -84,6 +91,9 @@ class CallWatcherService : Service() {
             return START_NOT_STICKY
         }
 
+        // Give up rather than idle indefinitely if the phone is never unlocked.
+        handler.postDelayed({ stopSelf() }, MAX_WAIT_MS)
+
         try {
             startForeground(NOTIFICATION_ID, statusNotification())
             running = true
@@ -96,7 +106,22 @@ class CallWatcherService : Service() {
             return START_NOT_STICKY
         }
 
-        return START_STICKY
+        // If the phone is already unlocked and in use, there is nothing to wait
+        // for — say it now and shut down.
+        if (isUsable()) announceSoon()
+
+        // NOT sticky: if the system kills this, it should stay dead until the
+        // next missed call rather than being resurrected to idle again.
+        return START_NOT_STICKY
+    }
+
+    /** True when the screen is on and the lock screen is not in the way. */
+    private fun isUsable(): Boolean {
+        val power = getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val keyguard = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        val awake = power?.isInteractive ?: false
+        val locked = keyguard?.isKeyguardLocked ?: false
+        return awake && !locked
     }
 
     override fun onDestroy() {
@@ -141,6 +166,10 @@ class CallWatcherService : Service() {
         if (prefs.voiceReplies) {
             boostThenSpeak(MissedCallReader.announcement(calls))
         }
+
+        // Work done. Shut down instead of lingering in Running Apps; the
+        // overlay is a window, so it survives the service exiting.
+        handler.postDelayed({ stopSelf() }, STOP_AFTER_MS)
     }
 
     /**
@@ -251,6 +280,12 @@ class CallWatcherService : Service() {
         private const val NOTIFICATION_ID = 51
         private const val ANNOUNCE_DELAY_MS = 1200L
         private const val RESTORE_VOLUME_MS = 9000L
+
+        /** Grace period after speaking, so the announcement isn't cut off. */
+        private const val STOP_AFTER_MS = 12_000L
+
+        /** Longest this will ever wait for an unlock before giving up. */
+        private const val MAX_WAIT_MS = 2L * 60 * 60 * 1000
 
         fun start(context: Context) {
             val intent = Intent(context, CallWatcherService::class.java)
