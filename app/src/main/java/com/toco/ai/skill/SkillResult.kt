@@ -8,5 +8,16 @@ sealed class SkillResult {
     data class Ok(val message: String) : SkillResult()
     data class Failed(val message: String) : SkillResult()
     data class NeedsPermission(val permission: String, val reason: String) : SkillResult()
+    /**
+     * Several contacts matched, so TOCO refuses to guess and hands the choice
+     * back. [label] is what to show, [value] what to run if picked.
+     */
+    data class Choose(
+        val prompt: String,
+        val options: List<Option>
+    ) : SkillResult() {
+        data class Option(val label: String, val detail: String, val command: String)
+    }
+
     object NotHandled : SkillResult()
 }

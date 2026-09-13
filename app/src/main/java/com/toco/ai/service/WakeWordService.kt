@@ -433,6 +433,11 @@ class WakeWordService : Service() {
         is SkillResult.Failed -> result.message
         is SkillResult.NeedsPermission ->
             "I need a permission for that. Open TOCO and tap the lock icon."
+        is SkillResult.Choose ->
+            // No UI here, so name them and let the user repeat with a number.
+            result.prompt + " I found " +
+                result.options.joinToString(", ") { it.detail } +
+                ". Say the number you want."
         SkillResult.NotHandled -> getString(R.string.no_module)
     }
 

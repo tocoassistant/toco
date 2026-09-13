@@ -39,6 +39,9 @@ class MissedCallOverlay(private val context: Context) {
 
     private var root: View? = null
     private var expanded = false
+
+    /** Told when the card goes away, so its owner can stop itself. */
+    var onClosed: (() -> Unit)? = null
     private var calls: List<MissedCall> = emptyList()
 
     /** How many times each caller rang, keyed the same way as [grouped]. */
@@ -101,7 +104,11 @@ class MissedCallOverlay(private val context: Context) {
         } catch (e: Exception) {
             // Already gone.
         }
+        onClosed?.invoke()
     }
+
+    /** True while the card is on screen. */
+    fun isShowing(): Boolean = root != null
 
     // ---------------- content ----------------
 

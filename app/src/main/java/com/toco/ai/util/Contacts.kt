@@ -13,6 +13,10 @@ import android.provider.ContactsContract
  */
 object Contacts {
 
+    /** Beyond this many, a spoken chooser stops being useful. */
+    private const val MAX_MATCHES = 6
+
+
     data class Match(val name: String, val number: String)
 
     /**
@@ -22,11 +26,25 @@ object Contacts {
      * Returns the first match; ambiguity is resolved by asking the user rather
      * than guessing, which is handled a level up.
      */
-    fun findByName(context: Context, query: String): Match? {
-        if (!Permissions.has(context, Manifest.permission.READ_CONTACTS)) return null
+    fun findByName(context: Context, query: String): Match? =
+        findAll(context, query).firstOrNull()
+
+    /**
+     * Every distinct number saved under a matching name.
+     *
+     * Returning a list rather than the first hit is what lets TOCO ask which
+     * Rohim you meant. Picking silently was wrong: it would call the wrong
+     * person with no warning, which is worse than a moment of friction.
+     *
+     * Numbers are de-duplicated because one contact often has the same number
+     * stored twice (mobile and WhatsApp), and offering an identical choice
+     * twice is noise.
+     */
+    fun findAll(context: Context, query: String): List<Match> {
+        if (!Permissions.has(context, Manifest.permission.READ_CONTACTS)) return emptyList()
 
         val name = query.trim()
-        if (name.isEmpty()) return null
+        if (name.isEmpty()) return emptyList()
 
         val projection = arrayOf(
             ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
@@ -39,13 +57,34 @@ object Contacts {
             ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " LIKE ?",
             arrayOf("%$name%"),
             null
-        ) ?: return null
+        ) ?: return emptyList()
+
+        val matches = mutableListOf<Match>()
+        val seen = mutableSetOf<String>()
 
         cursor.use {
-            if (!it.moveToFirst()) return null
-            val display = it.getString(0) ?: name
-            val number = it.getString(1) ?: return null
-            return Match(display, number)
+            while (it.moveToNext()) {
+                val display = it.getString(0) ?: name
+                val number = it.getString(1) ?: continue
+
+                // Compare on digits only: "0300 123" and "0300123" are one number.
+                val key = number.filter { c -> c.isDigit() }
+                if (key.isEmpty() || !seen.add(key)) continue
+
+                matches += Match(display, number)
+                if (matches.size >= MAX_MATCHES) break
+            }
+        }
+
+        // Exact name matches first: typing "Rohim" should not be outranked by
+        // "Rohimuddin" merely because of database order.
+        val lower = name.lowercase()
+        return matches.sortedBy { match ->
+            when {
+                match.name.equals(name, ignoreCase = true) -> 0
+                match.name.lowercase().startsWith(lower) -> 1
+                else -> 2
+            }
         }
     }
 

@@ -11,6 +11,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.toco.ai.R
 import com.toco.ai.core.Prefs
@@ -299,11 +300,38 @@ class HomeFragment : Fragment() {
                 skillPermission.launch(result.permission)
                 idle()
             }
+            is SkillResult.Choose -> {
+                idle()
+                askWhich(result)
+            }
             SkillResult.NotHandled -> {
                 tvOrbState.setText(getString(R.string.no_module))
                 resetSoon()
             }
         }
+    }
+
+    /**
+     * Asks which contact was meant. Picking runs the same pipeline again with
+     * the number substituted in, so nothing about the command path is special
+     * cased for chosen contacts.
+     */
+    private fun askWhich(choice: SkillResult.Choose) {
+        if (!isAdded) return
+
+        val labels = choice.options
+            .map { it.label + "\n" + it.detail }
+            .toTypedArray()
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(choice.prompt)
+            .setItems(labels) { _, index ->
+                dispatch(choice.options[index].command)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+
+        tvOrbState.setText(choice.prompt)
     }
 
     private fun idle() {

@@ -58,9 +58,28 @@ class CallSkill : Skill {
             )
         }
 
-        val match = Contacts.findByName(context, name)
-            ?: return SkillResult.Failed("No contact matching \"$name\".")
+        val matches = Contacts.findAll(context, name)
 
+        if (matches.isEmpty()) {
+            return SkillResult.Failed("No contact matching \"$name\".")
+        }
+
+        // One saved name, several numbers: ask rather than guess wrong.
+        if (matches.size > 1) {
+            return SkillResult.Choose(
+                prompt = "Which $name?",
+                options = matches.map { match ->
+                    SkillResult.Choose.Option(
+                        label = match.name,
+                        detail = match.number,
+                        // Dialling by number skips the lookup second time round.
+                        command = "call " + match.number
+                    )
+                }
+            )
+        }
+
+        val match = matches.first()
         return dial(context, PhoneNumbers.toDialable(match.number), match.name)
     }
 

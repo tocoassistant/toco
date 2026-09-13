@@ -161,15 +161,30 @@ class CallWatcherService : Service() {
         MissedCallNotifier.post(this, calls)
 
         overlay?.dismiss()
-        overlay = MissedCallOverlay(this).also { it.show(calls) }
+        overlay = MissedCallOverlay(this).also { card ->
+            // Closing the card is what ends the service. Previously the service
+            // stopped on a timer and onDestroy tore the card down with it, so
+            // the overlay vanished after a few seconds no matter what the user
+            // was doing with it.
+            card.onClosed = { stopSelf() }
+            card.show(calls)
+        }
 
         if (prefs.voiceReplies) {
             boostThenSpeak(MissedCallReader.announcement(calls))
         }
 
-        // Work done. Shut down instead of lingering in Running Apps; the
-        // overlay is a window, so it survives the service exiting.
-        handler.postDelayed({ stopSelf() }, STOP_AFTER_MS)
+        // Shut down once there is nothing left on screen. If the card is up,
+        // the service waits for it — but not forever, or a card left untouched
+        // would keep TOCO in Running Apps all day.
+        val showing = overlay?.isShowing() == true
+        handler.postDelayed(
+            {
+                overlay?.dismiss()
+                stopSelf()
+            },
+            if (showing) OVERLAY_LIFE_MS else STOP_AFTER_MS
+        )
     }
 
     /**
@@ -283,6 +298,9 @@ class CallWatcherService : Service() {
 
         /** Grace period after speaking, so the announcement isn't cut off. */
         private const val STOP_AFTER_MS = 12_000L
+
+        /** How long an untouched card stays before closing itself. */
+        private const val OVERLAY_LIFE_MS = 2L * 60 * 1000
 
         /** Longest this will ever wait for an unlock before giving up. */
         private const val MAX_WAIT_MS = 2L * 60 * 60 * 1000

@@ -62,9 +62,27 @@ class WhatsAppSkill : Skill {
             )
         }
 
-        val match = Contacts.findByName(context, name)
-            ?: return SkillResult.Failed("No contact matching \"$name\".")
+        val matches = Contacts.findAll(context, name)
 
+        if (matches.isEmpty()) {
+            return SkillResult.Failed("No contact matching \"$name\".")
+        }
+
+        if (matches.size > 1) {
+            val suffix = if (text.isBlank()) "" else " saying $text"
+            return SkillResult.Choose(
+                prompt = "Which $name?",
+                options = matches.map { match ->
+                    SkillResult.Choose.Option(
+                        label = match.name,
+                        detail = match.number,
+                        command = "whatsapp " + match.number + suffix
+                    )
+                }
+            )
+        }
+
+        val match = matches.first()
         val number = PhoneNumbers.toWhatsApp(match.number, Prefs(context).countryCode)
         return open(context, number, text, match.name)
     }
