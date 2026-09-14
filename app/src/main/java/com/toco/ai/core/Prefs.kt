@@ -56,7 +56,19 @@ class Prefs(context: Context) {
      * twice doesn't repeat the same calls.
      */
     var lastMissedCallSeen: Long
-        get() = sp.getLong(KEY_MISSED_SEEN, System.currentTimeMillis())
+        get() {
+            // Persist the default on first read. Returning a fresh
+            // System.currentTimeMillis() each time meant "calls newer than X"
+            // where X was always *now* — so nothing was ever newer, and every
+            // missed-call alert, notification and overlay silently found zero
+            // calls. The value has to be written once and then stay put.
+            val stored = sp.getLong(KEY_MISSED_SEEN, 0L)
+            if (stored != 0L) return stored
+
+            val now = System.currentTimeMillis()
+            sp.edit().putLong(KEY_MISSED_SEEN, now).apply()
+            return now
+        }
         set(value) = sp.edit().putLong(KEY_MISSED_SEEN, value).apply()
 
     /**

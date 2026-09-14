@@ -123,4 +123,7 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="onboard_continue">Continue</string>
     <string name="onboard_done">Start using TOCO</string>
     <string name="onboard_skip">Skip for now</string>
+    <string name="choose_subtitle">%1$d contacts match. Pick one.</string>
+    <string name="choose_cancel">Cancel</string>
+    <string name="choose_message">Message</string>
 </resources>

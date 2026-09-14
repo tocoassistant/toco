@@ -31,14 +31,19 @@ class PhoneStateReceiver : BroadcastReceiver() {
             TelephonyManager.EXTRA_STATE_RINGING -> {
                 rang = true
                 answered = false
+                ringingNumber = intent.getStringExtra("incoming_number")
+                IncomingCallAnnouncer.onRinging(context, ringingNumber)
             }
 
             TelephonyManager.EXTRA_STATE_OFFHOOK -> {
                 // Picked up, so this is not a missed call.
                 answered = true
+                IncomingCallAnnouncer.onStopped(context)
             }
 
             TelephonyManager.EXTRA_STATE_IDLE -> {
+                IncomingCallAnnouncer.onStopped(context)
+
                 if (rang && !answered) {
                     val appContext = context.applicationContext
                     Handler(Looper.getMainLooper()).postDelayed({
@@ -52,6 +57,7 @@ class PhoneStateReceiver : BroadcastReceiver() {
                 }
                 rang = false
                 answered = false
+                ringingNumber = null
             }
         }
     }
@@ -63,6 +69,7 @@ class PhoneStateReceiver : BroadcastReceiver() {
          */
         var rang = false
         var answered = false
+        var ringingNumber: String? = null
 
         const val LOG_WRITE_DELAY_MS = 1500L
     }

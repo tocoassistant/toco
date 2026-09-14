@@ -193,6 +193,8 @@ class OnboardingActivity : AppCompatActivity() {
         val prefs = Prefs(this)
         prefs.missedCallAlerts = true
         prefs.loudVoice = true
+        // Report calls from now on, not the whole call history.
+        prefs.lastMissedCallSeen = System.currentTimeMillis()
         prefs.onboardingDone = true
 
         startActivity(Intent(this, MainActivity::class.java))

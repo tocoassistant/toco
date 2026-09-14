@@ -11,7 +11,6 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.toco.ai.R
 import com.toco.ai.core.Prefs
@@ -22,6 +21,7 @@ import com.toco.ai.engine.CommandEngine
 import com.toco.ai.engine.CommandSequencer
 import com.toco.ai.skill.SkillResult
 import com.toco.ai.ui.MainActivity
+import com.toco.ai.ui.common.ChooserDialog
 import com.toco.ai.ui.access.AccessSheet
 import com.toco.ai.ui.widget.OrbView
 import com.toco.ai.util.Permissions
@@ -319,17 +319,17 @@ class HomeFragment : Fragment() {
     private fun askWhich(choice: SkillResult.Choose) {
         if (!isAdded) return
 
-        val labels = choice.options
-            .map { it.label + "\n" + it.detail }
-            .toTypedArray()
+        // WhatsApp commands get a different button than calls, so the row says
+        // what will actually happen.
+        val action = if (choice.options.firstOrNull()?.command?.startsWith("whatsapp") == true) {
+            getString(R.string.choose_message)
+        } else {
+            getString(R.string.overlay_call)
+        }
 
-        AlertDialog.Builder(requireContext())
-            .setTitle(choice.prompt)
-            .setItems(labels) { _, index ->
-                dispatch(choice.options[index].command)
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        ChooserDialog.show(requireContext(), choice, action) { option ->
+            dispatch(option.command)
+        }
 
         tvOrbState.setText(choice.prompt)
     }

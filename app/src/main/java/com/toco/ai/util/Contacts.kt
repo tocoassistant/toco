@@ -76,16 +76,78 @@ object Contacts {
             }
         }
 
-        // Exact name matches first: typing "Rohim" should not be outranked by
-        // "Rohimuddin" merely because of database order.
-        val lower = name.lowercase()
-        return matches.sortedBy { match ->
-            when {
-                match.name.equals(name, ignoreCase = true) -> 0
-                match.name.lowercase().startsWith(lower) -> 1
-                else -> 2
+        // Rank, then keep ONLY the best tier that exists.
+        //
+        // A plain LIKE '%ma%' is why asking for "Ma" offered Mama, Bablu Mama
+        // and Rakib Mama. Those are different people. If a contact is actually
+        // called "Ma", the ones that merely contain those letters are noise and
+        // are dropped rather than listed.
+        val best = matches.groupBy { tier(it.name, name) }.minByOrNull { it.key }
+        return best?.value ?: emptyList()
+    }
+
+    /**
+     * 0 = the whole name matches
+     * 1 = a word in the name starts with the query ("Bablu Mama" for "mama")
+     * 2 = the letters appear somewhere ("Mama" for "ma")
+     */
+    private fun tier(contactName: String, query: String): Int {
+        val name = contactName.lowercase().trim()
+        val q = query.lowercase().trim()
+
+        if (name == q) return 0
+
+        val words = name.split(" ", ",", "[", "]", "(", ")", "-")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
+        if (words.any { it == q }) return 0
+        if (words.any { it.startsWith(q) }) return 1
+        return 2
+    }
+
+    /**
+     * Saved name for a number, or null if it is not in contacts.
+     *
+     * Matches on the last 9 digits so that +8801327110515, 01327110515 and
+     * 1327110515 all resolve to the same person — callers arrive in whichever
+     * format the network hands over, which is rarely how it was saved.
+     */
+    fun findByNumber(context: Context, number: String): String? {
+        if (!Permissions.has(context, Manifest.permission.READ_CONTACTS)) return null
+
+        val digits = number.filter { it.isDigit() }
+        if (digits.length < 6) return null
+        val tail = digits.takeLast(9)
+
+        val projection = arrayOf(
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            ContactsContract.CommonDataKinds.Phone.NUMBER
+        )
+
+        val cursor = try {
+            context.contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                projection,
+                null,
+                null,
+                null
+            )
+        } catch (e: Exception) {
+            null
+        } ?: return null
+
+        cursor.use {
+            while (it.moveToNext()) {
+                val saved = it.getString(1) ?: continue
+                val savedDigits = saved.filter { c -> c.isDigit() }
+                if (savedDigits.length >= 6 && savedDigits.takeLast(9) == tail) {
+                    return it.getString(0)
+                }
             }
         }
+
+        return null
     }
 
     /**

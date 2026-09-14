@@ -85,13 +85,14 @@ class MissedCallOverlay(private val context: Context) {
             return
         }
 
-        // Slide-and-fade in, so it doesn't just snap into existence.
+        // Rises from the bottom edge, which reads as a sheet being pulled up
+        // rather than a notification dropping in.
         view.alpha = 0f
-        view.translationY = -40f
+        view.translationY = 220f
         view.animate()
             .alpha(1f)
             .translationY(0f)
-            .setDuration(260)
+            .setDuration(320)
             .setInterpolator(DecelerateInterpolator())
             .start()
     }
@@ -270,14 +271,28 @@ class MissedCallOverlay(private val context: Context) {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
-            // NOT_FOCUSABLE keeps the keyboard and the app underneath working;
-            // without it the overlay would swallow every key press.
+            // NOT_FOCUSABLE keeps the app underneath usable; DIM_BEHIND is what
+            // darkens everything else while the card is up.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_DIM_BEHIND,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP
-            y = 60
+            gravity = Gravity.BOTTOM
+            y = 0
+
+            // 0.75 as asked. Real background blur only exists on Android 12+
+            // and is applied there as well; on older versions the dim alone is
+            // what separates the card from the screen behind it.
+            dimAmount = DIM
+
+            if (Build.VERSION.SDK_INT >= 31) {
+                try {
+                    blurBehindRadius = BLUR_RADIUS
+                    flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                } catch (e: Throwable) {
+                    // Device or ROM without blur support; dim still applies.
+                }
+            }
         }
     }
 
@@ -286,5 +301,10 @@ class MissedCallOverlay(private val context: Context) {
 
     private companion object {
         const val COLLAPSED_ROWS = 2
+
+        /** How dark everything behind the card goes. */
+        const val DIM = 0.75f
+
+        const val BLUR_RADIUS = 40
     }
 }
