@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import com.toco.ai.R
 import com.toco.ai.ui.access.AccessSheet
 import com.toco.ai.ui.common.SimpleFragment
+import com.toco.ai.ui.diagnostics.CallDiagnosticsFragment
 import com.toco.ai.ui.home.HomeFragment
 import com.toco.ai.ui.models.ModelsFragment
 import com.toco.ai.ui.nav.TocoBottomNav
@@ -58,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         TASK -> SimpleFragment.create(R.string.task_title, R.string.task_body)
         MODELS -> ModelsFragment()
         HOME -> HomeFragment()
-        ANALYSE -> SimpleFragment.create(R.string.analyse_title, R.string.analyse_body)
+        ANALYSE -> CallDiagnosticsFragment()
         else -> SettingsFragment()
     }
 

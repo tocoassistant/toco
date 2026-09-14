@@ -126,4 +126,8 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="choose_subtitle">%1$d contacts match. Pick one.</string>
     <string name="choose_cancel">Cancel</string>
     <string name="choose_message">Message</string>
+    <string name="diag_title">Call check</string>
+    <string name="diag_all_good">Everything needed is in place.</string>
+    <string name="diag_problems">%1$d problem(s) stopping call alerts. Tap a red item to fix it.</string>
+    <string name="diag_tests">TESTS</string>
 </resources>
