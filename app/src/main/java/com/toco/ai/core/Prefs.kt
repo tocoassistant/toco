@@ -85,6 +85,22 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_ONBOARDED, false)
         set(value) = sp.edit().putBoolean(KEY_ONBOARDED, value).apply()
 
+    /**
+     * When the PHONE_STATE broadcast last arrived, or 0 if it never has.
+     *
+     * This is the single fact that separates "TOCO's code is broken" from
+     * "Android never told TOCO the phone rang" — which look identical from
+     * the outside and cannot otherwise be told apart.
+     */
+    var lastPhoneEvent: Long
+        get() = sp.getLong(KEY_PHONE_EVENT, 0L)
+        set(value) = sp.edit().putLong(KEY_PHONE_EVENT, value).apply()
+
+    /** The last state seen, for the same reason. */
+    var lastPhoneState: String
+        get() = sp.getString(KEY_PHONE_STATE, "") ?: ""
+        set(value) = sp.edit().putString(KEY_PHONE_STATE, value).apply()
+
     private companion object {
         const val KEY_NAME = "user_name"
         const val KEY_CC = "country_code"
@@ -97,5 +113,7 @@ class Prefs(context: Context) {
         const val KEY_MISSED_SEEN = "missed_call_seen"
         const val KEY_LOUD_VOICE = "loud_voice"
         const val KEY_ONBOARDED = "onboarding_done"
+        const val KEY_PHONE_EVENT = "last_phone_event"
+        const val KEY_PHONE_STATE = "last_phone_state"
     }
 }

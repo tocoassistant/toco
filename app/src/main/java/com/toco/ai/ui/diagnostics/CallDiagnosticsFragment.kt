@@ -193,7 +193,37 @@ class CallDiagnosticsFragment : Fragment() {
                 "put between checks; if it keeps resetting, nothing is ever new."
         )
 
-        // 7. What the log actually holds right now.
+        // 7. The decisive one: did Android ever deliver the broadcast?
+        val lastEvent = prefs.lastPhoneEvent
+        val everFired = lastEvent > 0L
+        val ago = if (everFired) (System.currentTimeMillis() - lastEvent) / 1000 else -1
+        list += Check(
+            "Phone events received",
+            everFired,
+            if (!everFired)
+                "NEVER. Android has not once told TOCO the phone rang. The code is " +
+                    "fine — the broadcast is being withheld. On Infinix this is " +
+                    "almost always Auto-start being off for TOCO."
+            else
+                "Last event " + ago + "s ago (" + prefs.lastPhoneState + "). " +
+                    "Broadcasts are arriving.",
+            if (everFired) null else "Fix"
+        ) {
+            openAutostart()
+        }
+
+        // 8. Auto-start, which is what gates the above on Transsion ROMs.
+        list += Check(
+            "Auto-start",
+            true,
+            "Infinix blocks background broadcasts for apps that are not on the " +
+                "auto-start list. If phone events say NEVER, turn this on for TOCO.",
+            "Open"
+        ) {
+            openAutostart()
+        }
+
+        // 9. What the log actually holds right now.
         val dayAgo = System.currentTimeMillis() - 24L * 60 * 60 * 1000
         val recent = if (callLog) MissedCallReader.since(context, dayAgo) else emptyList()
         val pending = if (callLog) MissedCallReader.since(context, since) else emptyList()
@@ -204,6 +234,45 @@ class CallDiagnosticsFragment : Fragment() {
         )
 
         return list
+    }
+
+    /**
+     * Auto-start lives in a different place on every OEM skin and none of it is
+     * standard Android, so each known location is tried in turn before falling
+     * back to the app's own settings page.
+     */
+    private fun openAutostart() {
+        val candidates = listOf(
+            "com.transsion.phonemanager" to "com.itel.autobootmanager.activity.AutoBootMgrActivity",
+            "com.transsion.phonemaster" to "com.transsion.autostart.AutoStartActivity",
+            "com.miui.securitycenter" to "com.miui.permcenter.autostart.AutoStartManagementActivity",
+            "com.coloros.safecenter" to "com.coloros.safecenter.permission.startup.StartupAppListActivity",
+            "com.letv.android.letvsafe" to "com.letv.android.letvsafe.AutobootManageActivity",
+            "com.huawei.systemmanager" to "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+        )
+
+        for ((pkg, cls) in candidates) {
+            try {
+                startActivity(
+                    Intent().setClassName(pkg, cls)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+                toast("Find TOCO in this list and allow auto-start.")
+                return
+            } catch (e: Exception) {
+                // Not this ROM; try the next.
+            }
+        }
+
+        toast("Open Settings > Apps > TOCO and enable Auto-start / Autolaunch.")
+        try {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.parse("package:" + requireContext().packageName))
+            )
+        } catch (e: Exception) {
+            // Nothing further to offer.
+        }
     }
 
     // ---------------- tests ----------------

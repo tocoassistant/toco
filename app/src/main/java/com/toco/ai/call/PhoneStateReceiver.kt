@@ -25,9 +25,19 @@ class PhoneStateReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         if (context == null || intent == null) return
         if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
-        if (!Prefs(context).missedCallAlerts) return
 
-        when (intent.getStringExtra(TelephonyManager.EXTRA_STATE)) {
+        val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
+
+        // Stamped FIRST, before any early return, so the diagnostic can prove
+        // whether the broadcast reaches TOCO at all. Many OEM builds silently
+        // withhold it from apps that are not on the auto-start list.
+        val prefs = Prefs(context)
+        prefs.lastPhoneEvent = System.currentTimeMillis()
+        prefs.lastPhoneState = state
+
+        if (!prefs.missedCallAlerts) return
+
+        when (state) {
             TelephonyManager.EXTRA_STATE_RINGING -> {
                 rang = true
                 answered = false
