@@ -96,14 +96,14 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="missed_toggle_desc">After a call is missed, TOCO tells you who called the next time you unlock. Nothing runs in the background until a call is actually missed. Long-press to test.</string>
     <string name="loud_voice_toggle">Loud voice</string>
     <string name="loud_voice_desc">TOCO speaks at ringtone loudness on the ring stream, so it is clear without turning media volume up. While TOCO talks the volume keys show Ring. If your phone is on silent, ring volume is 0 and TOCO will not be heard.</string>
-    <string name="overlay_one">You missed 1 call</string>
-    <string name="overlay_many">You missed %1$d calls</string>
-    <string name="overlay_more">+%1$d more</string>
+    <string name="overlay_one">1 missed call</string>
+    <string name="overlay_many">%1$d missed calls</string>
+    <string name="overlay_more">Show %1$d more</string>
     <string name="overlay_call">Call</string>
-    <string name="overlay_ignore_all">Ignore All</string>
+    <string name="overlay_ignore_all">Dismiss all</string>
     <string name="overlay_close">\u2715</string>
-    <string name="overlay_one_call">1 call</string>
-    <string name="overlay_n_calls">%1$d calls</string>
+    <string name="overlay_one_call">Called once</string>
+    <string name="overlay_n_calls">Called %1$d times</string>
     <string name="overlay_toggle">Missed call overlay</string>
     <string name="overlay_toggle_desc">Show a floating card on your home screen after unlocking, with tap-to-call buttons. Needs Display over other apps.</string>
     <string name="overlay_help_channel">Overlay setup</string>
@@ -132,4 +132,8 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="diag_tests">TESTS</string>
     <string name="onboard_screening">Call screening</string>
     <string name="onboard_screening_why">Lets the system tell TOCO about incoming calls directly. Without it your phone blocks call alerts. TOCO never blocks a call.</string>
+    <string name="overlay_hint">Tap anyone to call them back</string>
+    <string name="ago_now">Just now</string>
+    <string name="ago_min">%1$d min ago</string>
+    <string name="ago_hour">%1$d hr ago</string>
 </resources>

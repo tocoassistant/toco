@@ -58,10 +58,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:layout_marginBottom="12dp"
         android:textColor="@color/text_primary"
-        android:textSize="18sp"
+        android:textSize="19sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/overlayHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="14dp"
+        android:text="@string/overlay_hint"
+        android:textColor="@color/text_hint"
+        android:textSize="12sp" />
 
     <LinearLayout
         android:id="@+id/overlayList"

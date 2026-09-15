@@ -186,13 +186,15 @@ class MissedCallOverlay(private val context: Context) {
         view.findViewById<TextView>(R.id.callerInitial)
             .setText(label.trim().take(1).uppercase())
 
+        // One line that answers both questions at a glance: how many times,
+        // and how long ago. Two separate labels made the row read like a table.
         val count = countFor(call)
-        view.findViewById<TextView>(R.id.callerMeta).setText(
-            if (count == 1) context.getString(R.string.overlay_one_call)
-            else context.getString(R.string.overlay_n_calls, count)
-        )
-
-        view.findViewById<TextView>(R.id.callerTime).setText(clock(call.time))
+        val times = if (count == 1) {
+            context.getString(R.string.overlay_one_call)
+        } else {
+            context.getString(R.string.overlay_n_calls, count)
+        }
+        view.findViewById<TextView>(R.id.callerMeta).setText(times + "  \u00b7  " + ago(call.time))
 
         val dial = { _: View -> callBack(call) }
         view.setOnClickListener(dial)
@@ -296,8 +298,20 @@ class MissedCallOverlay(private val context: Context) {
         }
     }
 
-    private fun clock(time: Long): String =
-        SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(time))
+    /**
+     * "Just now", "12 min ago", "2 hr ago", then a clock time once the day has
+     * moved on. Relative wording is easier to act on than a bare timestamp.
+     */
+    private fun ago(time: Long): String {
+        val minutes = (System.currentTimeMillis() - time) / 60000
+
+        return when {
+            minutes < 1 -> context.getString(R.string.ago_now)
+            minutes < 60 -> context.getString(R.string.ago_min, minutes)
+            minutes < 24 * 60 -> context.getString(R.string.ago_hour, minutes / 60)
+            else -> SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()).format(Date(time))
+        }
+    }
 
     private companion object {
         const val COLLAPSED_ROWS = 2

@@ -96,9 +96,23 @@ class CallWatcherService : Service() {
                 lastError = "Couldn't start: " + e.message
             }
 
+            // Post the notification, and if the user is already looking at the
+            // phone, announce it there and then.
+            //
+            // This is the case with no lock screen at all: ACTION_USER_PRESENT
+            // never fires on such a device, so waiting for an "unlock" would
+            // wait forever. Whoever is holding an unlocked phone has already
+            // arrived — there is nothing left to wait for.
             LOG_CHECKS_MS.forEach { delay ->
-                handler.postDelayed({ MissedCallNotifier.notifyLatest(this) }, delay)
+                handler.postDelayed(
+                    {
+                        MissedCallNotifier.notifyLatest(this)
+                        if (isUsable()) announce()
+                    },
+                    delay
+                )
             }
+
             handler.postDelayed({ if (!isUsable()) stopSelf() }, MAX_WAIT_MS)
             return START_NOT_STICKY
         }
@@ -133,12 +147,31 @@ class CallWatcherService : Service() {
         return START_NOT_STICKY
     }
 
-    /** True when the screen is on and the lock screen is not in the way. */
+    /**
+     * True when the user can actually see the screen right now.
+     *
+     * Deliberately does NOT require an unlock event. A phone with no lock set
+     * — or with Smart Lock keeping it open at home — never sends
+     * ACTION_USER_PRESENT, so anything gated on unlocking would never run for
+     * those users at all. Screen on plus no keyguard in the way is the honest
+     * test of "they are looking at it".
+     */
     private fun isUsable(): Boolean {
         val power = getSystemService(Context.POWER_SERVICE) as? PowerManager
         val keyguard = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-        val awake = power?.isInteractive ?: false
-        val locked = keyguard?.isKeyguardLocked ?: false
+
+        val awake = try {
+            power?.isInteractive ?: false
+        } catch (e: Exception) {
+            false
+        }
+
+        val locked = try {
+            keyguard?.isKeyguardLocked ?: false
+        } catch (e: Exception) {
+            false
+        }
+
         return awake && !locked
     }
 
