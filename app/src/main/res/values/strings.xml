@@ -130,4 +130,6 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="diag_all_good">Everything needed is in place.</string>
     <string name="diag_problems">%1$d problem(s) stopping call alerts. Tap a red item to fix it.</string>
     <string name="diag_tests">TESTS</string>
+    <string name="onboard_screening">Call screening</string>
+    <string name="onboard_screening_why">Lets the system tell TOCO about incoming calls directly. Without it your phone blocks call alerts. TOCO never blocks a call.</string>
 </resources>

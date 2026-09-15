@@ -8,6 +8,7 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.app.role.RoleManager
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.LayoutInflater
@@ -52,6 +53,11 @@ class CallDiagnosticsFragment : Fragment() {
 
     private lateinit var prefs: Prefs
     private var overlay: MissedCallOverlay? = null
+
+    private val askRole =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            render()
+        }
 
     private val askPermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -193,7 +199,24 @@ class CallDiagnosticsFragment : Fragment() {
                 "put between checks; if it keeps resetting, nothing is ever new."
         )
 
-        // 7. The decisive one: did Android ever deliver the broadcast?
+        // 7. The route that OEM restrictions cannot block.
+        val hasRole = hasScreeningRole()
+        list += Check(
+            "Call screening role",
+            hasRole,
+            if (hasRole)
+                "TOCO is the screening app, so the system tells it about every " +
+                    "incoming call directly. This is the reliable route."
+            else
+                "NOT SET. Without this, TOCO depends on a broadcast that your " +
+                    "phone withholds from apps that are not auto-started. " +
+                    "Grant this and real calls will work.",
+            if (hasRole) null else "Grant"
+        ) {
+            requestScreeningRole()
+        }
+
+        // 8. Did the old broadcast route ever deliver anything?
         val lastEvent = prefs.lastPhoneEvent
         val everFired = lastEvent > 0L
         val ago = if (everFired) (System.currentTimeMillis() - lastEvent) / 1000 else -1
@@ -234,6 +257,44 @@ class CallDiagnosticsFragment : Fragment() {
         )
 
         return list
+    }
+
+    private fun hasScreeningRole(): Boolean {
+        if (Build.VERSION.SDK_INT < 29) return false
+        val manager = requireContext().getSystemService(Context.ROLE_SERVICE) as? RoleManager
+            ?: return false
+        return try {
+            manager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Asks to become the call screening app.
+     *
+     * Only one app can hold this at a time, so accepting replaces whatever
+     * currently does caller ID or spam filtering. TOCO blocks nothing — it
+     * allows every call through untouched — but the user should know what
+     * they are swapping out.
+     */
+    private fun requestScreeningRole() {
+        if (Build.VERSION.SDK_INT < 29) {
+            toast("This Android version has no screening role.")
+            return
+        }
+
+        val manager = requireContext().getSystemService(Context.ROLE_SERVICE) as? RoleManager
+        if (manager == null || !manager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
+            toast("Your phone does not offer the call screening role.")
+            return
+        }
+
+        try {
+            askRole.launch(manager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
+        } catch (e: Exception) {
+            toast("Couldn't open the request: " + e.message)
+        }
     }
 
     /**

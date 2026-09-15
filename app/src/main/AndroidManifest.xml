@@ -97,6 +97,19 @@
              gesture, opens TOCO listening. This is the closest Android
              equivalent to holding the side button for Siri. -->
         <!-- No microphone, no polling: only wakes on screen-on / unlock. -->
+        <!-- The system binds this for every incoming call once TOCO holds the
+             screening role, which is why it works on ROMs that withhold the
+             PHONE_STATE broadcast. TOCO allows all calls; it only listens. -->
+        <service
+            android:name=".call.TocoCallScreeningService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+
+        <!-- Kept as a fallback for ROMs that do deliver it. -->
         <receiver
             android:name=".call.PhoneStateReceiver"
             android:exported="true">

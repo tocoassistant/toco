@@ -85,6 +85,24 @@ class CallWatcherService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_INCOMING) {
+            // A call is ringing. Check the log shortly after it could have
+            // ended, so the missed-call notification lands on the lock screen
+            // without waiting for an unlock.
+            try {
+                startForeground(NOTIFICATION_ID, statusNotification())
+                running = true
+            } catch (e: Exception) {
+                lastError = "Couldn't start: " + e.message
+            }
+
+            LOG_CHECKS_MS.forEach { delay ->
+                handler.postDelayed({ MissedCallNotifier.notifyLatest(this) }, delay)
+            }
+            handler.postDelayed({ if (!isUsable()) stopSelf() }, MAX_WAIT_MS)
+            return START_NOT_STICKY
+        }
+
         if (intent?.action == ACTION_STOP) {
             running = false
             stopSelf()
@@ -276,6 +294,15 @@ class CallWatcherService : Service() {
 
     companion object {
         const val ACTION_STOP = "com.toco.ai.MISSED_STOP"
+        const val ACTION_INCOMING = "com.toco.ai.CALL_INCOMING"
+
+        /**
+         * When to re-read the call log after a call starts ringing. A ring
+         * lasts roughly 25-40 seconds, and the log entry is written a moment
+         * after it ends, so two checks cover both a short reject and a full
+         * unanswered ring.
+         */
+        val LOG_CHECKS_MS = listOf(20_000L, 45_000L, 90_000L)
 
         /**
          * Live state, so the settings screen can report whether this is
