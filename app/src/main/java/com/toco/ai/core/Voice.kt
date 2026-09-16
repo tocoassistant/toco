@@ -50,6 +50,37 @@ object Voice {
     /** The live engine, for callers that need to set pitch, rate or voice. */
     fun engine(): TextToSpeech? = if (ready) tts else null
 
+    /**
+     * Stops immediately, discarding anything queued.
+     *
+     * Needed because TextToSpeech finishes the current sentence no matter
+     * what: when a call was answered, TOCO kept announcing the caller over the
+     * top of the conversation until the sentence ran out.
+     */
+    fun stopSpeaking() {
+        try {
+            tts?.stop()
+        } catch (e: Exception) {
+            // Engine already gone.
+        }
+        queue.clear()
+    }
+
+    /** Replaces whatever is speaking instead of queueing behind it. */
+    fun speakNow(context: Context, text: String) {
+        init(context)
+        if (text.isBlank()) return
+        if (!ready) {
+            queue.clear()
+            queue += text
+            return
+        }
+
+        val params = Bundle()
+        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream(context))
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, UTTERANCE_ID)
+    }
+
     fun speak(context: Context, text: String) {
         init(context)
         if (text.isBlank()) return

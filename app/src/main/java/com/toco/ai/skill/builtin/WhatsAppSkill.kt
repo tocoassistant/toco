@@ -27,14 +27,17 @@ class WhatsAppSkill : Skill {
     override val name = "WhatsApp Message"
 
     private val packageName = "com.whatsapp"
-    private val triggers = listOf("whatsapp", "wa", "message", "msg", "text")
+    private val triggers = listOf("whatsapp", "wa", "message", "msg", "text", "send")
 
     override val priority = 90
 
     override fun canHandle(command: String): Boolean {
+        // The app has to be named. "text mom" and "message mom" used to land
+        // here, which meant a plain text message silently became a WhatsApp
+        // one — surprising, and wrong if the contact does not use WhatsApp.
+        // Those now go to SMS, which every phone can deliver.
         if (CommandText.hasPhrase(command, "imo")) return false
-        if (CommandText.hasPhrase(command, "whatsapp")) return true
-        return CommandText.startsWithVerb(command, listOf("message", "msg", "text"))
+        return CommandText.hasAnyPhrase(command, listOf("whatsapp", "wa"))
     }
 
     override fun execute(context: Context, command: String): SkillResult {

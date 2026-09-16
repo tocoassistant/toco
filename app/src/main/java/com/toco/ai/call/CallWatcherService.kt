@@ -204,7 +204,16 @@ class CallWatcherService : Service() {
 
         val since = prefs.lastMissedCallSeen
         val calls = MissedCallReader.since(this, since)
-        if (calls.isEmpty()) return
+
+        if (calls.isEmpty()) {
+            // Nothing to say. Previously the service simply returned and went
+            // on waiting, which is why a "Waiting for you to unlock" notice sat
+            // in the shade for fifteen minutes after the user had already
+            // unlocked. If the user is present and there is nothing to report,
+            // the job is over.
+            if (isUsable()) stopSelf()
+            return
+        }
 
         // Mark as seen immediately so a second unlock doesn't repeat it.
         prefs.lastMissedCallSeen = calls.maxOf { it.time }
@@ -322,6 +331,10 @@ class CallWatcherService : Service() {
             .setSmallIcon(android.R.drawable.stat_notify_missed_call)
             .setContentIntent(open)
             .setOngoing(true)
+            // Hidden from the lock screen: this is plumbing the user did not
+            // ask to see, and it was appearing above the actual alert.
+            .setVisibility(Notification.VISIBILITY_SECRET)
+            .setShowWhen(false)
             .build()
     }
 
@@ -362,8 +375,15 @@ class CallWatcherService : Service() {
         /** How long an untouched card stays before closing itself. */
         private const val OVERLAY_LIFE_MS = 2L * 60 * 1000
 
-        /** Longest this will ever wait for an unlock before giving up. */
-        private const val MAX_WAIT_MS = 2L * 60 * 60 * 1000
+        /**
+         * Longest this will ever wait for an unlock before giving up.
+         *
+         * Deliberately short. A missed call the user has not come back to
+         * within a quarter of an hour is no longer news worth speaking aloud,
+         * and the notification stays either way — so lingering only costs
+         * battery and clutters the shade.
+         */
+        private const val MAX_WAIT_MS = 15L * 60 * 1000
 
         fun start(context: Context) {
             val intent = Intent(context, CallWatcherService::class.java)

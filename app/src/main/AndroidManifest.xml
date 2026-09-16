@@ -30,6 +30,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Speaker, microphone mute and Bluetooth routing during a call.
+         Normal-level: granted at install, no prompt. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <!-- Background wake-word listening. MICROPHONE subtype is mandatory from
          Android 14; without it startForeground throws. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

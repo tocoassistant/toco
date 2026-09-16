@@ -32,6 +32,11 @@ class CallSkill : Skill {
 
     private val triggers = listOf("call", "dial", "phone", "ring")
 
+    private companion object {
+        const val SPEAKER_WAIT_MS = 20_000L
+        const val SPEAKER_POLL_MS = 700L
+    }
+
     // Highest, because "call mom" must never be read as anything else.
     override val priority = 95
 
@@ -39,10 +44,32 @@ class CallSkill : Skill {
         if (CommandText.hasAnyPhrase(command, listOf("whatsapp", "imo", "message"))) {
             return false
         }
+
+        // Anything referring to the call log belongs to CallHistorySkill.
+        // Without this, "call last caller" was read as calling someone named
+        // "last caller" and fell through to a contact search.
+        if (CommandText.hasAnyPhrase(
+                command,
+                listOf("last caller", "last call", "last missed", "missed caller",
+                       "recent caller", "recent call", "previous caller")
+            )
+        ) {
+            return false
+        }
+
+        // A bare "call back" with nobody named means the last caller, which
+        // is CallHistorySkill's job. With a name after it, it is ours.
+        val c = CommandText.normalize(command)
+        if (c == "call back" || c == "call again" || c == "redial") return false
+
         return CommandText.startsWithVerb(command, triggers)
     }
 
     override fun execute(context: Context, command: String): SkillResult {
+        if (CommandText.hasAnyPhrase(command, listOf("speaker", "speakerphone", "loudspeaker"))) {
+            armSpeaker(context)
+        }
+
         val literal = PhoneNumbers.extract(command)
         if (literal != null) {
             return dial(context, PhoneNumbers.toDialable(literal), literal)
@@ -81,6 +108,45 @@ class CallSkill : Skill {
 
         val match = matches.first()
         return dial(context, PhoneNumbers.toDialable(match.number), match.name)
+    }
+
+    /**
+     * "call mom on speaker" — the speaker cannot be switched on before the
+     * call exists, so the request is remembered and applied once the audio
+     * mode shows a call in progress. Giving up after a few seconds avoids
+     * flipping the speaker on during some later, unrelated call.
+     */
+    private fun armSpeaker(context: Context) {
+        val app = context.applicationContext
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val deadline = System.currentTimeMillis() + SPEAKER_WAIT_MS
+
+        fun attempt() {
+            val audio = app.getSystemService(Context.AUDIO_SERVICE)
+                as? android.media.AudioManager ?: return
+
+            val inCall = try {
+                audio.mode == android.media.AudioManager.MODE_IN_CALL ||
+                    audio.mode == android.media.AudioManager.MODE_IN_COMMUNICATION
+            } catch (e: Exception) {
+                false
+            }
+
+            if (inCall) {
+                try {
+                    audio.isSpeakerphoneOn = true
+                } catch (e: Exception) {
+                    // Some ROMs refuse; the call still connects normally.
+                }
+                return
+            }
+
+            if (System.currentTimeMillis() < deadline) {
+                handler.postDelayed({ attempt() }, SPEAKER_POLL_MS)
+            }
+        }
+
+        handler.postDelayed({ attempt() }, SPEAKER_POLL_MS)
     }
 
     private fun dial(context: Context, number: String, label: String): SkillResult {

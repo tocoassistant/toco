@@ -1,5 +1,13 @@
 package com.toco.ai.skill
 
+import com.toco.ai.skill.builtin.AlarmSkill
+import com.toco.ai.skill.builtin.MathSkill
+import com.toco.ai.skill.builtin.NavigationSkill
+import com.toco.ai.skill.builtin.SmsSkill
+import com.toco.ai.skill.builtin.TimeSkill
+import com.toco.ai.skill.builtin.CallControlSkill
+import com.toco.ai.skill.builtin.CallHistorySkill
+import com.toco.ai.skill.builtin.ContactLookupSkill
 import com.toco.ai.skill.builtin.CallSkill
 import com.toco.ai.skill.builtin.DeviceInfoSkill
 import com.toco.ai.skill.builtin.FlashlightSkill
@@ -25,7 +33,15 @@ object SkillRegistry {
     fun bootstrap() {
         if (skills.isNotEmpty()) return
         // Registration order no longer decides anything; Skill.priority does.
+        register(ContactLookupSkill())
+        register(CallHistorySkill())
+        register(CallControlSkill())
         register(CallSkill())
+        register(SmsSkill())
+        register(AlarmSkill())
+        register(NavigationSkill())
+        register(MathSkill())
+        register(TimeSkill())
         register(WhatsAppSkill())
         register(FlashlightSkill())
         register(VolumeSkill())

@@ -5,7 +5,6 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
-import android.telephony.TelephonyManager
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
 import com.toco.ai.util.Contacts
@@ -67,8 +66,11 @@ object IncomingCallAnnouncer {
         startedAt = System.currentTimeMillis()
         cachedName = describe(app, number)
 
-        handler.postDelayed({ announce(app) }, FIRST_DELAY_MS)
-        handler.postDelayed({ poll(app) }, POLL_INTERVAL_MS)
+        // The screening service fires a moment BEFORE the ringtone starts, so
+        // announcing on a fixed delay talked over the first ring or arrived
+        // early. Wait for the audio mode to actually reach RINGTONE, then add
+        // the delay from there.
+        waitForRing(app, 0)
     }
 
     /** Call answered, rejected or finished. Safe to call more than once. */
@@ -77,6 +79,7 @@ object IncomingCallAnnouncer {
     }
 
     private fun stop(app: Context) {
+        Voice.stopSpeaking()
         handler.removeCallbacksAndMessages(null)
         activeNumber = null
         announcements = 0
@@ -91,6 +94,33 @@ object IncomingCallAnnouncer {
      * moment it is not, which is what prevents TOCO talking over a call the
      * user has already answered.
      */
+    /**
+     * Holds off until the phone is genuinely ringing, then starts announcing.
+     * Gives up if the ring never materialises, which happens when a call is
+     * rejected instantly.
+     */
+    private fun waitForRing(app: Context, waited: Long) {
+        if (activeNumber == null) return
+
+        if (isAnswered(app)) {
+            stop(app)
+            return
+        }
+
+        if (isRinging(app)) {
+            handler.postDelayed({ announce(app) }, FIRST_DELAY_MS)
+            handler.postDelayed({ poll(app) }, POLL_INTERVAL_MS)
+            return
+        }
+
+        if (waited >= RING_WAIT_TIMEOUT_MS) {
+            stop(app)
+            return
+        }
+
+        handler.postDelayed({ waitForRing(app, waited + POLL_INTERVAL_MS) }, POLL_INTERVAL_MS)
+    }
+
     private fun poll(app: Context) {
         if (activeNumber == null) return
 
@@ -99,7 +129,10 @@ object IncomingCallAnnouncer {
             return
         }
 
-        if (!isRinging(app)) {
+        // Answered or hung up: silence TOCO mid-word rather than letting the
+        // sentence run on over a live conversation.
+        if (isAnswered(app) || !isRinging(app)) {
+            Voice.stopSpeaking()
             stop(app)
             return
         }
@@ -107,19 +140,39 @@ object IncomingCallAnnouncer {
         handler.postDelayed({ poll(app) }, POLL_INTERVAL_MS)
     }
 
+    /**
+     * Is the phone still ringing?
+     *
+     * Read from the audio mode rather than the telephony call state. On
+     * Android 12 and up getCallState() is deprecated and returns IDLE for many
+     * apps regardless of permission, which made TOCO think the call had ended
+     * after a couple of seconds and stop announcing — the "speaks twice then
+     * goes quiet" behaviour.
+     *
+     * The audio mode needs no permission and is unambiguous:
+     *   MODE_RINGTONE          still ringing
+     *   MODE_IN_CALL / IN_COMM answered
+     *   MODE_NORMAL            over
+     */
     private fun isRinging(app: Context): Boolean {
-        // Without the permission the state cannot be read; fall back to the
-        // timeout rather than announcing forever.
-        if (!Permissions.has(app, "android.permission.READ_PHONE_STATE")) return true
-
-        val telephony = app.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-            ?: return true
+        val audio = app.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
 
         return try {
-            @Suppress("DEPRECATION")
-            telephony.callState == TelephonyManager.CALL_STATE_RINGING
+            audio.mode == AudioManager.MODE_RINGTONE
         } catch (e: Exception) {
-            true
+            false
+        }
+    }
+
+    /** True once the call has been picked up. */
+    private fun isAnswered(app: Context): Boolean {
+        val audio = app.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
+
+        return try {
+            audio.mode == AudioManager.MODE_IN_CALL ||
+                audio.mode == AudioManager.MODE_IN_COMMUNICATION
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -131,7 +184,9 @@ object IncomingCallAnnouncer {
         }
 
         duck(app)
-        Voice.speak(app, phrase())
+        // Flush rather than queue: if the previous announcement is somehow
+        // still playing, repeating on top of it is worse than replacing it.
+        Voice.speakNow(app, phrase())
 
         announcements++
         if (announcements < MAX_ANNOUNCEMENTS) {
@@ -216,13 +271,16 @@ object IncomingCallAnnouncer {
     private const val REPEAT_EVERY_MS = 8000L
 
     /** How often the call state is re-checked. */
-    private const val POLL_INTERVAL_MS = 2000L
+    private const val POLL_INTERVAL_MS = 500L
 
     /** Stop after this many, so a very long ring is not endless chatter. */
     private const val MAX_ANNOUNCEMENTS = 4
 
     /** Hard stop, in case the call state can never be read. */
     private const val MAX_RING_MS = 60_000L
+
+    /** How long to wait for the ringtone to start before giving up. */
+    private const val RING_WAIT_TIMEOUT_MS = 6000L
 
     /** Ringtone level while the name is being spoken. */
     private const val DUCK_PERCENT = 80

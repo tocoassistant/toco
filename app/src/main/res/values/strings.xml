@@ -89,7 +89,7 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="missed_channel_status">Missed call watch</string>
     <string name="missed_channel_alert">Missed calls</string>
     <string name="missed_status_title">TOCO</string>
-    <string name="missed_status_text">Waiting for you to unlock</string>
+    <string name="missed_status_text">Checking for missed calls</string>
     <string name="missed_one">Missed call</string>
     <string name="missed_many">%1$d missed calls</string>
     <string name="missed_toggle">Missed call alerts</string>

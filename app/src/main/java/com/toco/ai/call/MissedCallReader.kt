@@ -60,6 +60,60 @@ object MissedCallReader {
         return calls
     }
 
+    /** A single log entry, whatever its type. */
+    data class Entry(val number: String, val name: String?, val time: Long, val missed: Boolean) {
+        fun label(): String = name ?: if (number.isBlank()) "an unknown number" else number
+    }
+
+    /**
+     * Most recent calls of any kind, newest first.
+     *
+     * Used by "call last caller" and "show recent calls". Reads the same
+     * system log as the missed-call path so the two can never disagree.
+     */
+    fun recent(context: Context, limit: Int = 10, missedOnly: Boolean = false): List<Entry> {
+        if (!Permissions.has(context, Manifest.permission.READ_CALL_LOG)) return emptyList()
+
+        val projection = arrayOf(
+            CallLog.Calls.NUMBER,
+            CallLog.Calls.CACHED_NAME,
+            CallLog.Calls.DATE,
+            CallLog.Calls.TYPE
+        )
+
+        val selection = if (missedOnly) CallLog.Calls.TYPE + " = ?" else null
+        val args = if (missedOnly) arrayOf(CallLog.Calls.MISSED_TYPE.toString()) else null
+
+        val cursor = try {
+            context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                projection,
+                selection,
+                args,
+                CallLog.Calls.DATE + " DESC"
+            )
+        } catch (e: Exception) {
+            null
+        } ?: return emptyList()
+
+        val entries = mutableListOf<Entry>()
+
+        cursor.use {
+            while (it.moveToNext() && entries.size < limit) {
+                val number = it.getString(0) ?: ""
+                val cached = it.getString(1)
+                entries += Entry(
+                    number = number,
+                    name = if (cached.isNullOrBlank()) null else cached,
+                    time = it.getLong(2),
+                    missed = it.getInt(3) == CallLog.Calls.MISSED_TYPE
+                )
+            }
+        }
+
+        return entries
+    }
+
     /**
      * What TOCO says out loud.
      *
