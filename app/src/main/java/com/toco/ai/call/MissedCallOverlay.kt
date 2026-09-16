@@ -15,8 +15,10 @@ import android.view.animation.DecelerateInterpolator
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.toco.ai.R
+import com.toco.ai.core.EventLog
 import com.toco.ai.core.Prefs
 import com.toco.ai.util.Permissions
+import com.toco.ai.util.Taps
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,8 +62,7 @@ class MissedCallOverlay(private val context: Context) {
         if (missed.isEmpty()) return
 
         if (!canShow()) {
-            // Say so instead of doing nothing. Without this the feature looks
-            // broken when it is actually one ungranted permission away.
+            EventLog.log(context, "OVERLAY", "refused: no Display-over-other-apps permission")
             OverlayPermissionNotice.post(context)
             return
         }
@@ -73,14 +74,19 @@ class MissedCallOverlay(private val context: Context) {
         val view = LayoutInflater.from(context).inflate(R.layout.overlay_missed, null, false)
         root = view
 
-        view.findViewById<TextView>(R.id.overlayClose).setOnClickListener { dismiss() }
+        view.findViewById<TextView>(R.id.overlayClose).setOnClickListener {
+            if (Taps.allow("overlay-close")) dismiss()
+        }
 
         render()
 
         try {
             windowManager?.addView(view, params())
+            EventLog.log(context, "OVERLAY", "shown with " + calls.size + " caller(s)")
         } catch (e: Exception) {
-            // Permission revoked between the check and the add.
+            // The single most useful line in the whole log: the window manager
+            // refusing the view is invisible by definition.
+            EventLog.log(context, "OVERLAY", "addView FAILED: " + e.javaClass.simpleName + " " + e.message)
             root = null
             return
         }
@@ -163,7 +169,7 @@ class MissedCallOverlay(private val context: Context) {
         if (hidden > 0) {
             more.visibility = View.VISIBLE
             more.setText(context.getString(R.string.overlay_more, hidden))
-            more.setOnClickListener { expand() }
+            more.setOnClickListener { if (Taps.allow("overlay-expand")) expand() }
         } else {
             more.visibility = View.GONE
         }
@@ -173,7 +179,7 @@ class MissedCallOverlay(private val context: Context) {
         // Ignore All is useful whether the list is collapsed or expanded, so
         // unlike the old Call All it is always offered.
         ignoreButton.visibility = View.VISIBLE
-        ignoreButton.setOnClickListener { ignoreAll() }
+        ignoreButton.setOnClickListener { if (Taps.allow("overlay-ignore")) ignoreAll() }
     }
 
     private fun rawCount(): Int = totalCalls
@@ -196,7 +202,11 @@ class MissedCallOverlay(private val context: Context) {
         }
         view.findViewById<TextView>(R.id.callerMeta).setText(times + "  \u00b7  " + ago(call.time))
 
-        val dial = { _: View -> callBack(call) }
+        // One key per caller, so tapping two different people quickly still
+        // works while hammering one of them does not dial repeatedly.
+        val dial = { _: View ->
+            if (Taps.allow("overlay-call-" + call.number, Taps.HEAVY_MS)) callBack(call)
+        }
         view.setOnClickListener(dial)
         view.findViewById<TextView>(R.id.callerCall).setOnClickListener(dial)
 

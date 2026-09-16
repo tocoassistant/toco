@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.toco.ai.R
 import com.toco.ai.skill.SkillResult
+import com.toco.ai.util.Taps
 
 /**
  * "Which one did you mean?" in TOCO's own styling.
@@ -57,6 +58,7 @@ object ChooserDialog {
             row.findViewById<TextView>(R.id.optionGo).setText(actionLabel)
 
             row.setOnClickListener {
+                if (!Taps.allow("chooser", Taps.HEAVY_MS)) return@setOnClickListener
                 dialog.dismiss()
                 onPick(option)
             }

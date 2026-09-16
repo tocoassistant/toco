@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
+import com.toco.ai.core.EventLog
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
 import com.toco.ai.util.Contacts
@@ -73,6 +74,15 @@ object IncomingCallAnnouncer {
         waitForRing(app, 0)
     }
 
+    /**
+     * Puts the ringtone back if a previous run was killed mid-announcement.
+     * Called at startup, because nothing else would ever undo it.
+     */
+    fun restoreVolumeIfStranded(context: Context) {
+        val app = context.applicationContext
+        if (Prefs(app).duckedRingVolume >= 0) restore(app)
+    }
+
     /** Call answered, rejected or finished. Safe to call more than once. */
     fun onStopped(context: Context) {
         stop(context.applicationContext)
@@ -108,12 +118,14 @@ object IncomingCallAnnouncer {
         }
 
         if (isRinging(app)) {
+            EventLog.log(app, "INCOMING", "ringtone detected after " + waited + "ms")
             handler.postDelayed({ announce(app) }, FIRST_DELAY_MS)
             handler.postDelayed({ poll(app) }, POLL_INTERVAL_MS)
             return
         }
 
         if (waited >= RING_WAIT_TIMEOUT_MS) {
+            EventLog.log(app, "INCOMING", "gave up: ringtone never started")
             stop(app)
             return
         }
@@ -132,6 +144,7 @@ object IncomingCallAnnouncer {
         // Answered or hung up: silence TOCO mid-word rather than letting the
         // sentence run on over a live conversation.
         if (isAnswered(app) || !isRinging(app)) {
+            EventLog.log(app, "INCOMING", "call ended or answered - cutting speech")
             Voice.stopSpeaking()
             stop(app)
             return
@@ -243,6 +256,7 @@ object IncomingCallAnnouncer {
             if (target >= current) return
 
             duckedFrom = current
+            Prefs(app).duckedRingVolume = current
             audio.setStreamVolume(AudioManager.STREAM_RING, target, 0)
         } catch (e: Exception) {
             // Do Not Disturb blocks volume changes without policy access.
@@ -251,8 +265,9 @@ object IncomingCallAnnouncer {
     }
 
     private fun restore(app: Context) {
-        val previous = duckedFrom ?: return
+        val previous = duckedFrom ?: Prefs(app).duckedRingVolume.takeIf { it >= 0 } ?: return
         duckedFrom = null
+        Prefs(app).duckedRingVolume = -1
 
         try {
             val audio = app.getSystemService(Context.AUDIO_SERVICE) as? AudioManager

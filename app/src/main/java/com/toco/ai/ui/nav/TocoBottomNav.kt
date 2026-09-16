@@ -83,7 +83,12 @@ class TocoBottomNav @JvmOverloads constructor(
             holder.ring.scaleY = RING_MIN
             holder.icon.setColorFilter(dim)
 
-            item.setOnClickListener { select(index) }
+            item.setOnClickListener {
+                // Fast switching between different tabs is fine; repeatedly
+                // hitting the same one is not, and select() already ignores
+                // that. This only stops a burst from queueing transactions.
+                if (com.toco.ai.util.Taps.allow("nav", 250L)) select(index)
+            }
 
             addView(item, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
             holders += holder

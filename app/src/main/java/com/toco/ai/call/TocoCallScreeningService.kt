@@ -3,6 +3,7 @@ package com.toco.ai.call
 import android.content.Intent
 import android.telecom.Call
 import android.telecom.CallScreeningService
+import com.toco.ai.core.EventLog
 import com.toco.ai.core.Prefs
 
 /**
@@ -31,6 +32,12 @@ class TocoCallScreeningService : CallScreeningService() {
         prefs.lastPhoneEvent = System.currentTimeMillis()
         prefs.lastPhoneState = "SCREENING"
 
+        EventLog.log(
+            applicationContext,
+            "SCREENING",
+            "system invoked us, number=" + (if (number.isNullOrBlank()) "withheld" else number)
+        )
+
         if (prefs.missedCallAlerts) {
             IncomingCallAnnouncer.onRinging(applicationContext, number)
 
@@ -44,7 +51,7 @@ class TocoCallScreeningService : CallScreeningService() {
                         .setAction(CallWatcherService.ACTION_INCOMING)
                 )
             } catch (e: Exception) {
-                // Background start refused; the unlock path still covers it.
+                EventLog.log(applicationContext, "SCREENING", "watcher start refused: " + e.message)
             }
         }
 

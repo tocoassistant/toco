@@ -2,6 +2,8 @@ package com.toco.ai.ui.diagnostics
 
 import android.Manifest
 import android.app.NotificationManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
@@ -25,9 +27,11 @@ import com.toco.ai.call.MissedCall
 import com.toco.ai.call.MissedCallNotifier
 import com.toco.ai.call.MissedCallOverlay
 import com.toco.ai.call.MissedCallReader
+import com.toco.ai.core.EventLog
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
 import com.toco.ai.util.Permissions
+import com.toco.ai.util.Taps
 
 /**
  * Answers "why isn't this working" without another round trip.
@@ -198,6 +202,21 @@ class CallDiagnosticsFragment : Fragment() {
             "Reporting calls newer than " + age + "s ago. This value must stay " +
                 "put between checks; if it keeps resetting, nothing is ever new."
         )
+
+        // The engine runs in another process that Android kills freely; when
+        // that happens TOCO keeps working but stops being audible, which is
+        // indistinguishable from "everything broke" unless it is reported.
+        val voiceOk = Voice.isHealthy()
+        list += Check(
+            "Voice engine",
+            voiceOk,
+            if (voiceOk) "Connected. TOCO can speak."
+            else "Not connected right now. TOCO will rebuild it on the next line it speaks.",
+            if (voiceOk) null else "Test"
+        ) {
+            Voice.speak(requireContext(), "Voice engine restarted.")
+            render()
+        }
 
         // 7. The route that OEM restrictions cannot block.
         val hasRole = hasScreeningRole()
@@ -416,6 +435,39 @@ class CallDiagnosticsFragment : Fragment() {
 
         fill(view.findViewById(R.id.diagList), all)
         fill(view.findViewById(R.id.diagTests), tests())
+        renderLog(view)
+    }
+
+    /**
+     * The timeline of what actually happened on this phone.
+     *
+     * Every hard bug so far has been invisible from the outside, so this is
+     * the one place that can tell "the system never called us" apart from "it
+     * called us and we failed".
+     */
+    private fun renderLog(view: View) {
+        val log = view.findViewById<TextView>(R.id.diagLog)
+        val entries = EventLog.entries(requireContext())
+
+        log.setText(
+            if (entries.isEmpty()) getString(R.string.diag_log_empty)
+            else entries.take(60).joinToString("\n")
+        )
+
+        view.findViewById<TextView>(R.id.diagCopy).setOnClickListener {
+            val clipboard = requireContext()
+                .getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+
+            clipboard?.setPrimaryClip(
+                ClipData.newPlainText("TOCO log", EventLog.asText(requireContext()))
+            )
+            toast("Log copied. Paste it wherever you need it.")
+        }
+
+        view.findViewById<TextView>(R.id.diagClear).setOnClickListener {
+            EventLog.clear(requireContext())
+            render()
+        }
     }
 
     private fun fill(parent: LinearLayout, items: List<Check>) {
@@ -437,7 +489,9 @@ class CallDiagnosticsFragment : Fragment() {
             val action = row.findViewById<TextView>(R.id.diagAction)
             if (check.fixLabel != null) {
                 action.setText(check.fixLabel)
-                row.setOnClickListener { check.fix?.invoke() }
+                row.setOnClickListener {
+                    if (Taps.allow("diag-" + check.label, Taps.HEAVY_MS)) check.fix?.invoke()
+                }
             } else {
                 action.setText("")
                 row.isClickable = false

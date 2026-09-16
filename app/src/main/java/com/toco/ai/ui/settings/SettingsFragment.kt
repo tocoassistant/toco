@@ -24,6 +24,7 @@ import com.toco.ai.call.MissedCallOverlay
 import com.toco.ai.call.MissedCallReader
 import com.toco.ai.service.WakeWordService
 import com.toco.ai.util.Permissions
+import com.toco.ai.util.Taps
 
 /**
  * Settings: the switches that change how TOCO behaves.
@@ -253,7 +254,9 @@ class SettingsFragment : Fragment() {
             )
         )
 
-        row.setOnClickListener { onClick() }
+        row.setOnClickListener {
+            if (Taps.allow("setting-" + label, Taps.HEAVY_MS)) onClick()
+        }
         if (onLongClick != null) {
             row.setOnLongClickListener {
                 onLongClick()

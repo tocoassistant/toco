@@ -17,6 +17,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import com.toco.ai.R
+import com.toco.ai.core.EventLog
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
 import com.toco.ai.ui.MainActivity
@@ -81,6 +82,7 @@ class CallWatcherService : Service() {
         } catch (e: Exception) {
             registered = false
             lastError = "Couldn't listen for unlock: " + e.message
+            EventLog.log(this, "WATCHER", "registerReceiver FAILED: " + e.message)
         }
     }
 
@@ -103,6 +105,8 @@ class CallWatcherService : Service() {
             // never fires on such a device, so waiting for an "unlock" would
             // wait forever. Whoever is holding an unlocked phone has already
             // arrived — there is nothing left to wait for.
+            EventLog.log(this, "WATCHER", "started by incoming call")
+
             LOG_CHECKS_MS.forEach { delay ->
                 handler.postDelayed(
                     {
@@ -204,6 +208,7 @@ class CallWatcherService : Service() {
 
         val since = prefs.lastMissedCallSeen
         val calls = MissedCallReader.since(this, since)
+        EventLog.log(this, "WATCHER", "unlock check found " + calls.size + " missed call(s)")
 
         if (calls.isEmpty()) {
             // Nothing to say. Previously the service simply returned and went

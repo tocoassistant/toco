@@ -101,6 +101,17 @@ class Prefs(context: Context) {
         get() = sp.getString(KEY_PHONE_STATE, "") ?: ""
         set(value) = sp.edit().putString(KEY_PHONE_STATE, value).apply()
 
+    /**
+     * Ring volume before TOCO ducked it, or -1 when nothing is ducked.
+     *
+     * Kept on disk rather than in memory because Android can kill the process
+     * mid-announcement. An in-memory value dies with it, and the ringtone
+     * would stay quietly turned down for good with nothing left to restore it.
+     */
+    var duckedRingVolume: Int
+        get() = sp.getInt(KEY_DUCKED, -1)
+        set(value) = sp.edit().putInt(KEY_DUCKED, value).apply()
+
     private companion object {
         const val KEY_NAME = "user_name"
         const val KEY_CC = "country_code"
@@ -115,5 +126,6 @@ class Prefs(context: Context) {
         const val KEY_ONBOARDED = "onboarding_done"
         const val KEY_PHONE_EVENT = "last_phone_event"
         const val KEY_PHONE_STATE = "last_phone_state"
+        const val KEY_DUCKED = "ducked_ring_volume"
     }
 }

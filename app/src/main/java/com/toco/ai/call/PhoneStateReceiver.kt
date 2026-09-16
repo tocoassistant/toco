@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyManager
+import com.toco.ai.core.EventLog
 import com.toco.ai.core.Prefs
 
 /**
@@ -34,6 +35,7 @@ class PhoneStateReceiver : BroadcastReceiver() {
         val prefs = Prefs(context)
         prefs.lastPhoneEvent = System.currentTimeMillis()
         prefs.lastPhoneState = state
+        EventLog.log(context, "BROADCAST", "PHONE_STATE = " + state)
 
         if (!prefs.missedCallAlerts) return
 

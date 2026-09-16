@@ -33,17 +33,97 @@ object Voice {
 
     private var appContext: Context? = null
 
+    /** Guards against a rebuild storm if the engine is genuinely unavailable. */
+    private var lastRebuild = 0L
+
     fun init(context: Context) {
         appContext = context.applicationContext
-        if (tts != null) return
+        if (tts != null && ready) return
 
-        tts = TextToSpeech(context.applicationContext) { status ->
-            ready = status == TextToSpeech.SUCCESS
-            if (ready) {
-                tts?.language = Locale.US
-                queue.forEach { say(it) }
-                queue.clear()
+        // A half-built engine from a previous failed attempt must go, or the
+        // old "tts != null so we are fine" assumption comes straight back.
+        if (tts != null) release()
+
+        build(context.applicationContext)
+    }
+
+    private fun build(app: Context) {
+        lastRebuild = System.currentTimeMillis()
+
+        tts = try {
+            TextToSpeech(app) { status ->
+                ready = status == TextToSpeech.SUCCESS
+
+                if (ready) {
+                    try {
+                        tts?.language = Locale.US
+                    } catch (e: Exception) {
+                        // Locale unsupported; the engine default still speaks.
+                    }
+                    Voices.applySaved(app)
+
+                    val pending = queue.toList()
+                    queue.clear()
+                    pending.forEach { say(it) }
+                } else {
+                    EventLog.log(app, "VOICE", "engine failed to connect (status=" + status + ")")
+                    release()
+                }
             }
+        } catch (e: Exception) {
+            ready = false
+            null
+        }
+    }
+
+    private fun release() {
+        try {
+            tts?.shutdown()
+        } catch (e: Exception) {
+            // Already gone.
+        }
+        tts = null
+        ready = false
+    }
+
+    /**
+     * The engine lives in its own process, which Android kills whenever it
+     * needs the memory. When that happens the object here stays non-null but
+     * every call to it silently does nothing — so TOCO would keep running
+     * commands while saying nothing at all, which looks exactly like the whole
+     * app has stopped working.
+     *
+     * speak() returns ERROR when the binding is dead, and that is the signal
+     * to rebuild and try the line again.
+     */
+    private fun speakOrRebuild(text: String, mode: Int) {
+        val app = appContext ?: return
+
+        val engine = tts
+        if (engine == null || !ready) {
+            queue += text
+            init(app)
+            return
+        }
+
+        val params = Bundle()
+        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream(app))
+
+        val result = try {
+            engine.speak(text, mode, params, UTTERANCE_ID)
+        } catch (e: Exception) {
+            TextToSpeech.ERROR
+        }
+
+        if (result == TextToSpeech.ERROR) {
+            EventLog.log(app, "VOICE", "speak FAILED, engine is dead - rebuilding")
+            if (System.currentTimeMillis() - lastRebuild > REBUILD_COOLDOWN_MS) {
+                release()
+                queue += text
+                init(app)
+            }
+        } else {
+            EventLog.log(app, "VOICE", "spoke: " + text.take(40))
         }
     }
 
@@ -68,32 +148,24 @@ object Voice {
 
     /** Replaces whatever is speaking instead of queueing behind it. */
     fun speakNow(context: Context, text: String) {
-        init(context)
         if (text.isBlank()) return
-        if (!ready) {
-            queue.clear()
-            queue += text
-            return
-        }
-
-        val params = Bundle()
-        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream(context))
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, UTTERANCE_ID)
+        init(context)
+        queue.clear()
+        speakOrRebuild(text, TextToSpeech.QUEUE_FLUSH)
     }
 
     fun speak(context: Context, text: String) {
-        init(context)
         if (text.isBlank()) return
-        if (ready) say(text) else queue += text
+        init(context)
+        speakOrRebuild(text, TextToSpeech.QUEUE_ADD)
     }
 
     private fun say(text: String) {
-        val context = appContext ?: return
-
-        val params = Bundle()
-        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream(context))
-        tts?.speak(text, TextToSpeech.QUEUE_ADD, params, UTTERANCE_ID)
+        speakOrRebuild(text, TextToSpeech.QUEUE_ADD)
     }
+
+    /** True when TOCO can actually be heard right now. */
+    fun isHealthy(): Boolean = tts != null && ready
 
     /** Ring stream by default; media only if the user turned the setting off. */
     private fun stream(context: Context): Int =
@@ -113,11 +185,10 @@ object Voice {
     }
 
     fun shutdown() {
-        tts?.stop()
-        tts?.shutdown()
-        tts = null
-        ready = false
+        release()
+        queue.clear()
     }
 
     private const val UTTERANCE_ID = "toco"
+    private const val REBUILD_COOLDOWN_MS = 3000L
 }

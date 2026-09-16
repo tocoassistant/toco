@@ -25,6 +25,7 @@ import com.toco.ai.ui.common.ChooserDialog
 import com.toco.ai.ui.access.AccessSheet
 import com.toco.ai.ui.widget.OrbView
 import com.toco.ai.util.Permissions
+import com.toco.ai.util.Taps
 import java.util.Calendar
 
 class HomeFragment : Fragment() {
@@ -46,6 +47,13 @@ class HomeFragment : Fragment() {
      * user had to retype the command.
      */
     private var pendingCommand: String? = null
+
+    /**
+     * True while a command is running. Without this, tapping send during a
+     * Gemini round trip started a second request on another thread, and both
+     * would write their answer over the orb in whatever order they finished.
+     */
+    private var busy = false
     private lateinit var prefs: Prefs
     private var voiceInput: VoiceInput? = null
 
@@ -115,9 +123,17 @@ class HomeFragment : Fragment() {
     }
 
     private fun wireInput() {
-        orb.setOnClickListener { toggleListening() }
-        requireView().findViewById<View>(R.id.btnMic).setOnClickListener { toggleListening() }
-        requireView().findViewById<View>(R.id.btnSend).setOnClickListener { submitTyped() }
+        // Every control goes through the tap guard. The orb and mic share a
+        // key because they do the same thing and pressing both is one intent.
+        orb.setOnClickListener {
+            if (Taps.allow("listen")) toggleListening()
+        }
+        requireView().findViewById<View>(R.id.btnMic).setOnClickListener {
+            if (Taps.allow("listen")) toggleListening()
+        }
+        requireView().findViewById<View>(R.id.btnSend).setOnClickListener {
+            if (Taps.allow("send")) submitTyped()
+        }
 
         requireView().findViewById<View>(R.id.btnPermissions).setOnClickListener {
             AccessSheet().show(parentFragmentManager, AccessSheet.TAG)
@@ -125,7 +141,7 @@ class HomeFragment : Fragment() {
 
         etCommand.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) {
-                submitTyped()
+                if (Taps.allow("send")) submitTyped()
                 true
             } else {
                 false
@@ -190,6 +206,13 @@ class HomeFragment : Fragment() {
      * freeze the UI (and Android would throw).
      */
     private fun dispatch(command: String) {
+        if (busy) {
+            // Say so rather than silently ignoring it, or the app looks stuck.
+            toast("Still working on the last one.")
+            return
+        }
+
+        busy = true
         etCommand.setText("")
 
         val steps = sequencer.split(command)
@@ -208,6 +231,7 @@ class HomeFragment : Fragment() {
         }
 
         if (!Ai.isReady()) {
+            done()
             tvOrbState.setText(getString(R.string.no_module))
             orb.setState(OrbView.State.IDLE)
             resetSoon()
@@ -220,6 +244,7 @@ class HomeFragment : Fragment() {
         Thread {
             val reply = engine.handleWithAi(requireContext(), command)
             view?.post {
+                done()
                 if (!isAdded) return@post
                 when (reply) {
                     is CommandEngine.Reply.Action -> applyAction(reply.result)
@@ -258,12 +283,13 @@ class HomeFragment : Fragment() {
                         )
                     }
                 },
-                onDone = { done ->
+                onDone = { steps ->
                     view?.post {
+                        done()
                         if (!isAdded) return@post
-                        val failed = done.lastOrNull()?.result
+                        val failed = steps.lastOrNull()?.result
                         if (failed is SkillResult.Ok || failed == null) {
-                            val summary = getString(R.string.steps_done, done.size)
+                            val summary = getString(R.string.steps_done, steps.size)
                             tvOrbState.setText(summary)
                             if (prefs.voiceReplies) Voice.speak(requireContext(), summary)
                         } else {
@@ -273,7 +299,7 @@ class HomeFragment : Fragment() {
                                 else -> getString(R.string.no_module)
                             }
                             tvOrbState.setText(
-                                getString(R.string.step_stopped, done.size) + " " + message
+                                getString(R.string.step_stopped, steps.size) + " " + message
                             )
                         }
                         orb.setState(OrbView.State.IDLE)
@@ -284,7 +310,13 @@ class HomeFragment : Fragment() {
         }.start()
     }
 
+    /** Every path out of dispatch must clear this, or the UI locks up. */
+    private fun done() {
+        busy = false
+    }
+
     private fun applyAction(result: SkillResult) {
+        done()
         when (result) {
             is SkillResult.Ok -> {
                 tvOrbState.setText(result.message)

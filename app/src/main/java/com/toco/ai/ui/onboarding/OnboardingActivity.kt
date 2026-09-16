@@ -3,6 +3,8 @@ package com.toco.ai.ui.onboarding
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.app.role.RoleManager
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -34,21 +36,33 @@ import com.toco.ai.util.Permissions
  */
 class OnboardingActivity : AppCompatActivity() {
 
+    /**
+     * [kind] matters because the three are granted in completely different
+     * ways: a runtime dialog, a settings screen, or a system role request.
+     * Treating them alike is what made an earlier version report the screening
+     * role as granted whenever the overlay was.
+     */
+    private enum class Kind { RUNTIME, OVERLAY, SCREENING_ROLE }
+
     private data class Step(
         val label: String,
         val why: String,
-        val permissions: List<String>,
-        /** True for the overlay, which has no runtime dialog. */
-        val viaSettings: Boolean = false
+        val permissions: List<String> = emptyList(),
+        val kind: Kind = Kind.RUNTIME
     )
 
     private var askedOverlay = false
 
+    private val askRole =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            render()
+        }
+
     private val requestPermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             render()
-            // Runtime prompts are done; the overlay screen is next.
-            if (!overlayGranted() && !askedOverlay) openOverlaySettings()
+            // Runtime prompts are done; keep going through the remaining kinds.
+            advance()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,17 +111,33 @@ class OnboardingActivity : AppCompatActivity() {
                 listOf(Manifest.permission.RECORD_AUDIO)
             ),
             Step(
+                getString(R.string.onboard_screening),
+                getString(R.string.onboard_screening_why),
+                kind = Kind.SCREENING_ROLE
+            ),
+            Step(
                 getString(R.string.onboard_overlay),
                 getString(R.string.onboard_overlay_why),
-                emptyList(),
-                viaSettings = true
+                kind = Kind.OVERLAY
             )
         )
     }
 
-    private fun granted(step: Step): Boolean =
-        if (step.viaSettings) overlayGranted()
-        else step.permissions.all { Permissions.has(this, it) }
+    private fun granted(step: Step): Boolean = when (step.kind) {
+        Kind.OVERLAY -> overlayGranted()
+        Kind.SCREENING_ROLE -> screeningRoleHeld()
+        Kind.RUNTIME -> step.permissions.all { Permissions.has(this, it) }
+    }
+
+    private fun screeningRoleHeld(): Boolean {
+        if (Build.VERSION.SDK_INT < 29) return true
+        val manager = getSystemService(Context.ROLE_SERVICE) as? RoleManager ?: return true
+        return try {
+            manager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+        } catch (e: Exception) {
+            true
+        }
+    }
 
     private fun overlayGranted(): Boolean =
         if (Build.VERSION.SDK_INT >= 23) Settings.canDrawOverlays(this) else true
@@ -152,6 +182,12 @@ class OnboardingActivity : AppCompatActivity() {
 
     // ---------------- actions ----------------
 
+    /**
+     * Works through whatever is still missing, one kind at a time: all the
+     * runtime dialogs in a single batch, then the screening role, then the
+     * overlay screen. Each returns here on resume, so the user is walked
+     * through the whole list without having to find anything themselves.
+     */
     private fun advance() {
         val pending = steps().filter { !granted(it) }
 
@@ -160,8 +196,9 @@ class OnboardingActivity : AppCompatActivity() {
             return
         }
 
-        // Runtime permissions first, in one batch, then the overlay screen.
-        val runtime = pending.filter { !it.viaSettings }.flatMap { it.permissions }
+        val runtime = pending
+            .filter { it.kind == Kind.RUNTIME }
+            .flatMap { it.permissions }
             .filter { !Permissions.has(this, it) }
 
         if (runtime.isNotEmpty()) {
@@ -169,7 +206,25 @@ class OnboardingActivity : AppCompatActivity() {
             return
         }
 
+        if (pending.any { it.kind == Kind.SCREENING_ROLE }) {
+            requestScreeningRole()
+            return
+        }
+
         openOverlaySettings()
+    }
+
+    private fun requestScreeningRole() {
+        if (Build.VERSION.SDK_INT < 29) return
+
+        val manager = getSystemService(Context.ROLE_SERVICE) as? RoleManager ?: return
+        if (!manager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) return
+
+        try {
+            askRole.launch(manager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
+        } catch (e: Exception) {
+            // Some ROMs hide the role; the broadcast fallback still applies.
+        }
     }
 
     private fun openOverlaySettings() {
