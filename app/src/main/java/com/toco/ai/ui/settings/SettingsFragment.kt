@@ -19,7 +19,6 @@ import com.toco.ai.R
 import com.toco.ai.ai.Ai
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
-import com.toco.ai.call.CallWatcherService
 import com.toco.ai.call.MissedCallOverlay
 import com.toco.ai.call.MissedCallReader
 import com.toco.ai.service.WakeWordService
@@ -195,11 +194,6 @@ class SettingsFragment : Fragment() {
             return
         }
 
-        CallWatcherService.lastError?.let {
-            toast("Last attempt failed: " + it)
-            return
-        }
-
         // Look back a day regardless of what has already been announced, so
         // the check works even after an alert was shown.
         val dayAgo = System.currentTimeMillis() - 24L * 60 * 60 * 1000
@@ -287,7 +281,6 @@ class SettingsFragment : Fragment() {
             // call is actually missed, so TOCO stays out of Running Apps.
             toast("On. TOCO will tell you after a call is missed — nothing runs until then.")
         } else {
-            CallWatcherService.stop(requireContext())
         }
     }
 

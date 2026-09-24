@@ -41,18 +41,18 @@ class TocoCallScreeningService : CallScreeningService() {
         if (prefs.missedCallAlerts) {
             IncomingCallAnnouncer.onRinging(applicationContext, number)
 
-            // The screening service is unbound as soon as this returns, so it
-            // cannot itself wait to see whether the call is answered. The
-            // watcher takes over: it checks the call log shortly afterwards and
-            // again at the next unlock.
-            try {
-                startService(
-                    Intent(this, CallWatcherService::class.java)
-                        .setAction(CallWatcherService.ACTION_INCOMING)
-                )
-            } catch (e: Exception) {
-                EventLog.log(applicationContext, "SCREENING", "watcher start refused: " + e.message)
-            }
+            // Check the call log a little later, straight from this process.
+            //
+            // The previous version started a foreground service here, which is
+            // why everything worked with TOCO open and nothing worked with it
+            // closed: since Android 12 an app in the background is not allowed
+            // to start a foreground service, so the call was refused and the
+            // whole chain died silently.
+            //
+            // Nothing needs a service. Posting a notification and adding a
+            // window are both things any process can do, and this process is
+            // already alive because the system just called us.
+            MissedCallCheck.scheduleAfterCall(applicationContext)
         }
 
         // Allow the call. Every disallow flag stays false on purpose.

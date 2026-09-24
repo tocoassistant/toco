@@ -22,6 +22,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import com.toco.ai.R
 import com.toco.ai.ai.Ai
+import com.toco.ai.core.EventLog
 import com.toco.ai.core.Prefs
 import com.toco.ai.core.Voice
 import com.toco.ai.engine.CommandEngine
@@ -77,6 +78,9 @@ class WakeWordService : Service() {
     /** Amplitude watcher thread. Null while the recognizer holds the mic. */
     private var listenerThread: Thread? = null
 
+    /** Adaptive noise gate: only close/loud speech relative to the room wakes it. */
+    private val noiseGate = com.toco.ai.audio.NoiseGate()
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -111,6 +115,7 @@ class WakeWordService : Service() {
 
         if (!running) {
             running = true
+            EventLog.log(this, "WAKE", "listening started (sleep mode)")
             sleepAndWatch()
         }
 
@@ -175,20 +180,26 @@ class WakeWordService : Service() {
                     return@Thread
                 }
 
+                // Real, on-device audio cleanup where the hardware offers it, so
+                // the amplitude the gate sees is voice rather than hiss and hum.
+                attachAudioEffects(record.audioSessionId)
+
                 record.startRecording()
+                noiseGate.reset()
 
-                var loudFrames = 0
-
+                var woke = false
                 while (running && state == State.SLEEPING && !Thread.interrupted()) {
                     val read = record.read(buffer, 0, FRAME_SIZE)
                     if (read <= 0) continue
 
-                    if (amplitude(buffer, read) > SPEECH_THRESHOLD) {
-                        loudFrames++
-                        if (loudFrames >= FRAMES_TO_WAKE) break
-                    } else {
-                        loudFrames = 0
+                    if (noiseGate.offer(amplitude(buffer, read))) {
+                        woke = true
+                        break
                     }
+                }
+
+                if (woke) {
+                    EventLog.log(this, "WAKE", "triggered - " + noiseGate.environment())
                 }
             } catch (e: SecurityException) {
                 handler.post { failAndStop("Microphone permission was revoked.") }
@@ -213,6 +224,28 @@ class WakeWordService : Service() {
 
         listenerThread = thread
         thread.start()
+    }
+
+    /**
+     * Turns on the platform's own noise suppression, echo cancellation and
+     * automatic gain for this recording session, on the devices that have them.
+     * Each is checked for availability first; where the chip does not provide
+     * one, it is simply skipped rather than failing.
+     */
+    private fun attachAudioEffects(sessionId: Int) {
+        try {
+            if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
+                android.media.audiofx.NoiseSuppressor.create(sessionId)?.enabled = true
+            }
+            if (android.media.audiofx.AutomaticGainControl.isAvailable()) {
+                android.media.audiofx.AutomaticGainControl.create(sessionId)?.enabled = true
+            }
+            if (android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
+                android.media.audiofx.AcousticEchoCanceler.create(sessionId)?.enabled = true
+            }
+        } catch (e: Exception) {
+            // Effects are a bonus; the gate works without them.
+        }
     }
 
     /** Mean absolute amplitude of a frame, 0..32767. */
@@ -314,6 +347,7 @@ class WakeWordService : Service() {
         (1000L * (1 shl consecutiveErrors.coerceAtMost(5))).coerceAtMost(30_000L)
 
     private fun failAndStop(message: String) {
+        EventLog.log(this, "WAKE", "stopped: " + message)
         Voice.speak(this, message)
         stopSelf()
     }
@@ -357,6 +391,7 @@ class WakeWordService : Service() {
         }
 
         // Wake phrase alone: greet, then listen for the command.
+        EventLog.log(this, "WAKE", "wake phrase heard")
         Voice.speak(this, getString(R.string.wake_greeting))
         awaitingCommand = true
         handler.postDelayed({
@@ -552,14 +587,6 @@ class WakeWordService : Service() {
         private const val SAMPLE_RATE = 16000
         private const val FRAME_SIZE = 1024
 
-        /**
-         * Mean amplitude that counts as possible speech. Lower wakes on quiet
-         * noise and drains more; higher misses softly spoken wake words.
-         */
-        private const val SPEECH_THRESHOLD = 1500
-
-        /** Consecutive loud frames required, so a single click doesn't wake it. */
-        private const val FRAMES_TO_WAKE = 3
 
         /** Time for "Yes?" to finish before listening for the command. */
         private const val WAKE_REPLY_GAP_MS = 1200L

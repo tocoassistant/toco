@@ -18,9 +18,9 @@ class TocoSession(context: Context) : VoiceInteractionSession(context) {
     override fun onShow(args: Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
 
-        context.startService(
-            Intent(context, WakeWordService::class.java)
-                .setAction(WakeWordService.ACTION_TALK)
+        context.startActivity(
+            Intent(context, com.toco.ai.ui.listening.ListeningActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
 
         hide()

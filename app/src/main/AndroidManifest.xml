@@ -38,7 +38,10 @@
          Android 14; without it startForeground throws. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- Only to bring wake-word listening back after a reboot, if the user
+         had it on. Nothing is started on boot otherwise. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Flashlight via CameraManager.setTorchMode needs no permission. -->
     <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
@@ -100,20 +103,17 @@
         <!-- Digital assistant role: long-press home / power, or the assist
              gesture, opens TOCO listening. This is the closest Android
              equivalent to holding the side button for Siri. -->
-        <!-- No microphone, no polling: only wakes on screen-on / unlock. -->
-        <!-- The system binds this for every incoming call once TOCO holds the
-             screening role, which is why it works on ROMs that withhold the
-             PHONE_STATE broadcast. TOCO allows all calls; it only listens. -->
-        <service
-            android:name=".call.TocoCallScreeningService"
-            android:exported="true"
-            android:permission="android.permission.BIND_SCREENING_SERVICE">
-            <intent-filter>
-                <action android:name="android.telecom.CallScreeningService" />
-            </intent-filter>
-        </service>
 
         <!-- Kept as a fallback for ROMs that do deliver it. -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".call.PhoneStateReceiver"
             android:exported="true">
@@ -121,15 +121,6 @@
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
-
-        <service
-            android:name=".call.CallWatcherService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Announcing missed calls when the screen is unlocked" />
-        </service>
 
         <service
             android:name=".service.TocoInteractionService"
@@ -167,6 +158,15 @@
 
         <!-- Handles the assist intent on ROMs that route it to an activity
              instead of the interaction service. -->
+        <activity
+            android:name=".ui.listening.ListeningActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.Toco.Transparent" />
+
         <activity
             android:name=".ui.assist.AssistActivity"
             android:exported="true"

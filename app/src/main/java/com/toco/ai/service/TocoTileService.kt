@@ -24,10 +24,11 @@ class TocoTileService : TileService() {
     override fun onClick() {
         super.onClick()
 
-        // ACTION_TALK skips the wake word and listens for a command directly.
-        val intent = Intent(this, WakeWordService::class.java)
-            .setAction(WakeWordService.ACTION_TALK)
+        // A tile cannot draw its own UI, so it opens the listening screen. On
+        // Android 14+ a tile is allowed to start an activity from the click.
+        val intent = Intent(this, com.toco.ai.ui.listening.ListeningActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-        startService(intent)
+        startActivityAndCollapse(intent)
     }
 }

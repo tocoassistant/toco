@@ -59,12 +59,10 @@ class PhoneStateReceiver : BroadcastReceiver() {
                 if (rang && !answered) {
                     val appContext = context.applicationContext
                     Handler(Looper.getMainLooper()).postDelayed({
-                        MissedCallNotifier.notifyLatest(appContext)
-
-                        // Only now does the watcher need to exist. It waits for
-                        // the next unlock, announces, and stops itself — so
-                        // TOCO has no running process on days nobody calls.
-                        CallWatcherService.start(appContext)
+                        // Same serviceless path the screening service uses, so
+                        // there is one behaviour regardless of which route told
+                        // us the phone rang.
+                        MissedCallCheck.scheduleAfterCall(appContext)
                     }, LOG_WRITE_DELAY_MS)
                 }
                 rang = false
