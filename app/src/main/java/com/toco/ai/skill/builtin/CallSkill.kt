@@ -168,7 +168,7 @@ class CallSkill : Skill {
                 Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number"))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-            SkillResult.Ok("Dialer ready for $label — press call")
+            SkillResult.Ok("Dialing $label")
         } catch (e: Exception) {
             SkillResult.Failed("No dialer app on this phone.")
         }

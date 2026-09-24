@@ -4,6 +4,10 @@ on:
   push:
   workflow_dispatch:
 
+# The release step needs write access to create a release and upload the APK.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,7 +36,24 @@ jobs:
 
       - run: ./gradlew assembleDebug --stacktrace
 
+      # Still uploaded as an artifact, so old runs remain downloadable.
       - uses: actions/upload-artifact@v4
         with:
           name: toco-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      # A rolling "latest" release, so there is one permanent link that always
+      # points at the newest APK. Downloading never means digging through runs
+      # or unzipping again: it is always
+      #   github.com/<you>/toco/releases/latest
+      - name: Publish latest APK
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest TOCO build
+          body: >
+            Automatically built from the newest commit.
+            Install app-debug.apk below.
+          files: app/build/outputs/apk/debug/app-debug.apk
+          make_latest: true

@@ -22,6 +22,13 @@ class VoiceInput(private val context: Context) {
         fun onReady()
         fun onResult(text: String)
         fun onError(message: String)
+
+        /**
+         * Live microphone level, 0..1, several times a second while listening.
+         * Lets the UI pulse with the voice. Default empty so existing callers
+         * that don't care are unaffected.
+         */
+        fun onLevel(level: Float) {}
     }
 
     private var recognizer: SpeechRecognizer? = null
@@ -64,7 +71,13 @@ class VoiceInput(private val context: Context) {
 
             override fun onBeginningOfSpeech() {}
             override fun onEndOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onRmsChanged(rmsdB: Float) {
+                // SpeechRecognizer reports RMS roughly in the range -2..10 dB.
+                // Map that to 0..1 for the orb; clamp so noise spikes don't
+                // slam it to full.
+                val normalized = ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
+                callback.onLevel(normalized)
+            }
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}

@@ -82,8 +82,8 @@ class SmsSkill : Skill {
 
         context.startActivity(intent)
 
-        if (body.isBlank()) SkillResult.Ok("Message to $label ready")
-        else SkillResult.Ok("Message to $label ready — tap send")
+        if (body.isBlank()) SkillResult.Ok("Message ready")
+        else SkillResult.Ok("Ready — tap send")
     } catch (e: Exception) {
         SkillResult.Failed("No messaging app on this phone.")
     }

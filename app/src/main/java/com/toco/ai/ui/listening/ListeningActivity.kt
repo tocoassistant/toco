@@ -86,6 +86,10 @@ class ListeningActivity : AppCompatActivity() {
                 if (!isFinishing) stateText.setText(getString(R.string.listen_listening))
             }
 
+            override fun onLevel(level: Float) {
+                if (!isFinishing) orb.setAmplitude(level)
+            }
+
             override fun onResult(text: String) {
                 if (isFinishing) return
                 heardText.text = text
@@ -118,6 +122,7 @@ class ListeningActivity : AppCompatActivity() {
             return
         }
 
+        orb.setState(OrbView.State.THINKING)
         stateText.setText(getString(R.string.listen_thinking))
 
         Thread {

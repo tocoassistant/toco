@@ -86,7 +86,7 @@ class CallControlSkill : Skill {
         audio.stopBluetoothSco()
         audio.isBluetoothScoOn = false
         audio.isSpeakerphoneOn = false
-        SkillResult.Ok("Back to the phone earpiece")
+        SkillResult.Ok("Earpiece")
     } catch (e: Exception) {
         SkillResult.Failed("Couldn't switch audio.")
     }
@@ -95,14 +95,14 @@ class CallControlSkill : Skill {
         audio.isSpeakerphoneOn = false
         audio.startBluetoothSco()
         audio.isBluetoothScoOn = true
-        SkillResult.Ok("Switching to Bluetooth")
+        SkillResult.Ok("Bluetooth")
     } catch (e: Exception) {
         SkillResult.Failed("No Bluetooth audio device connected.")
     }
 
     private fun setMic(audio: AudioManager, mute: Boolean): SkillResult = try {
         audio.isMicrophoneMute = mute
-        SkillResult.Ok(if (mute) "Microphone muted" else "Microphone unmuted")
+        SkillResult.Ok(if (mute) "Muted" else "Unmuted")
     } catch (e: Exception) {
         SkillResult.Failed("Couldn't change the microphone.")
     }

@@ -69,7 +69,7 @@ class VolumeSkill : Skill {
             }
             c.contains("max") || c.contains("full") -> {
                 audio.setStreamVolume(stream, max, AudioManager.FLAG_SHOW_UI)
-                SkillResult.Ok("Volume at maximum")
+                SkillResult.Ok("Max volume")
             }
             c.contains("down") || c.contains("decrease") || c.contains("lower") ||
                 c.contains("quieter") || c.contains("reduce") -> {

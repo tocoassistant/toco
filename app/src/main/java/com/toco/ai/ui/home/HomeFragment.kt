@@ -177,6 +177,10 @@ class HomeFragment : Fragment() {
                 if (isAdded) setLabel(R.string.orb_listening)
             }
 
+            override fun onLevel(level: Float) {
+                if (isAdded) orb.setAmplitude(level)
+            }
+
             override fun onResult(text: String) {
                 if (!isAdded) return
                 etCommand.setText(text)
@@ -238,7 +242,7 @@ class HomeFragment : Fragment() {
             return
         }
 
-        orb.setState(OrbView.State.WORKING)
+        orb.setState(OrbView.State.THINKING)
         setLabel(R.string.orb_thinking)
 
         Thread {

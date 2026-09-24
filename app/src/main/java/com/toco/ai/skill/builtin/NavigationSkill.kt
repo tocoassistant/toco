@@ -45,7 +45,7 @@ class NavigationSkill : Skill {
                     Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(destination)))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 )
-                SkillResult.Ok("Showing $destination on the map")
+                SkillResult.Ok("Showing $destination")
             } catch (e2: Exception) {
                 SkillResult.Failed("No maps app on this phone.")
             }

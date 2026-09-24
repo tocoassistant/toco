@@ -32,12 +32,29 @@ android {
         buildConfig true
     }
 
+    signingConfigs {
+        // One fixed key for every build. Android treats two APKs as the "same
+        // app" only if they share a signature, so signing every build with this
+        // is what lets an update install over the old one WITHOUT wiping
+        // permissions or the default-assistant choice. Without it, each CI
+        // build was signed with a throwaway debug key and looked like a
+        // different app, forcing a clean reinstall every time.
+        toco {
+            storeFile file("../toco-release.jks")
+            storePassword "tocotoco"
+            keyAlias "toco"
+            keyPassword "tocotoco"
+        }
+    }
+
     buildTypes {
         debug {
             minifyEnabled false
+            signingConfig signingConfigs.toco
         }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.toco
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
