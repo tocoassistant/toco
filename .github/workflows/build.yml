@@ -30,7 +30,9 @@ jobs:
       # The key is a repo secret, never committed. Without it the app still
       # builds; TOCO just reports that the AI is not configured.
       - name: Write local.properties
-        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > local.properties
+        run: |
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > local.properties
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> local.properties
 
       - run: chmod +x gradlew
 

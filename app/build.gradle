@@ -12,6 +12,7 @@ if (localFile.exists()) {
     localFile.withInputStream { localProps.load(it) }
 }
 def geminiKey = localProps.getProperty("GEMINI_API_KEY", "")
+def groqKey = localProps.getProperty("GROQ_API_KEY", "")
 
 android {
     namespace 'com.toco.ai'
@@ -25,6 +26,7 @@ android {
         versionName "0.1.0"
 
         buildConfigField "String", "GEMINI_API_KEY", "\"" + geminiKey + "\""
+        buildConfigField "String", "GROQ_API_KEY", "\"" + groqKey + "\""
     }
 
     // AGP 8 turns BuildConfig off by default; the Gemini key needs it.

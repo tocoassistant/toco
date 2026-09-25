@@ -56,7 +56,38 @@ class GeminiProvider(
         return last
     }
 
+    /**
+     * Wraps one model call with a couple of retries.
+     *
+     * 503 ("high demand") and 429 (rate limit) are almost always momentary on
+     * Google's side — the key is fine, the server is just busy. Retrying twice
+     * with a growing pause turns most of those from a visible failure into a
+     * slight delay, instead of making the user repeat themselves.
+     */
     private fun call(
+        model: String,
+        prompt: String,
+        history: List<AIProvider.Turn>
+    ): AIResult {
+        var attempt = 0
+        while (true) {
+            val result = callOnce(model, prompt, history)
+
+            val busy = result is AIResult.Failed &&
+                (result.message.contains("503") || result.message.contains("rate limit"))
+
+            if (!busy || attempt >= MAX_RETRIES) return result
+
+            attempt++
+            try {
+                Thread.sleep(RETRY_BASE_MS * attempt)
+            } catch (e: InterruptedException) {
+                return result
+            }
+        }
+    }
+
+    private fun callOnce(
         model: String,
         prompt: String,
         history: List<AIProvider.Turn>
@@ -85,7 +116,10 @@ class GeminiProvider(
                     "Gemini rejected the key: " + reason(raw)
                 )
                 code == 404 -> AIResult.Failed("404: model $model not available.")
-                code == 429 -> AIResult.Failed("Gemini rate limit reached. Try again shortly.")
+                code == 429 -> AIResult.Failed("rate limit - busy")
+                code == 500 || code == 503 -> AIResult.Failed(
+                    "Gemini error 503: the model is busy right now."
+                )
                 code !in 200..299 -> AIResult.Failed("Gemini error $code: " + reason(raw))
                 else -> parse(raw)
             }
@@ -163,6 +197,8 @@ class GeminiProvider(
 
     private companion object {
         const val MAX_HISTORY = 10
+        const val MAX_RETRIES = 2
+        const val RETRY_BASE_MS = 1200L
 
         const val SYSTEM_PROMPT =
             "You are TOCO, a voice assistant running on the user's Android phone. " +
