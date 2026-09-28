@@ -35,21 +35,33 @@ object Ai {
     fun isReady(): Boolean = gemini.isConfigured() || groq.isConfigured()
 
     /** Blocking. Call from a background thread. */
+    @Synchronized
     fun ask(prompt: String): AIResult {
+        val cleanPrompt = prompt.trim()
+        if (cleanPrompt.isEmpty()) return AIResult.Failed("Please say or type something first.")
+        if (cleanPrompt.length > MAX_PROMPT_CHARS) {
+            return AIResult.Failed("That request is too long. Keep it under $MAX_PROMPT_CHARS characters.")
+        }
+
+        AiRateLimiter.retryAfterMillis()?.let { waitMs ->
+            val waitSeconds = (waitMs + 999L) / 1000L
+            return AIResult.Failed("Too many requests. Try again in ${waitSeconds}s.")
+        }
+
         val turns = history.toList()
 
-        var result = firstReady()?.ask(prompt, turns)
+        var result = firstReady()?.ask(cleanPrompt, turns)
             ?: return AIResult.Failed("No AI provider is configured.")
 
         // Fall through to the backup only when the primary failed in a way the
         // backup might actually recover from, and only if a backup exists.
         if (shouldFallBack(result) && groq.isConfigured() && gemini.isConfigured()) {
-            val backup = groq.ask(prompt, turns)
+            val backup = groq.ask(cleanPrompt, turns)
             if (backup is AIResult.Ok) result = backup
         }
 
         if (result is AIResult.Ok) {
-            history += AIProvider.Turn(fromUser = true, text = prompt)
+            history += AIProvider.Turn(fromUser = true, text = cleanPrompt)
             history += AIProvider.Turn(fromUser = false, text = result.text)
             while (history.size > MAX_TURNS) history.removeAt(0)
         }
@@ -72,9 +84,13 @@ object Ai {
     private fun shouldFallBack(result: AIResult): Boolean =
         result is AIResult.Failed
 
-    fun clearHistory() = history.clear()
+    fun clearHistory() {
+        history.clear()
+        AiRateLimiter.reset()
+    }
 
     fun turns(): List<AIProvider.Turn> = history.toList()
 
     private const val MAX_TURNS = 20
+    private const val MAX_PROMPT_CHARS = 4_000
 }

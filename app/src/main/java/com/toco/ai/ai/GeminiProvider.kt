@@ -73,8 +73,9 @@ class GeminiProvider(
         while (true) {
             val result = callOnce(model, prompt, history)
 
-            val busy = result is AIResult.Failed &&
-                (result.message.contains("503") || result.message.contains("rate limit"))
+            // Retry temporary server overloads, but do not hammer the API after
+            // a 429 response. Provider rate limits should be respected immediately.
+            val busy = result is AIResult.Failed && result.message.contains("503")
 
             if (!busy || attempt >= MAX_RETRIES) return result
 
@@ -197,7 +198,7 @@ class GeminiProvider(
 
     private companion object {
         const val MAX_HISTORY = 10
-        const val MAX_RETRIES = 2
+        const val MAX_RETRIES = 1
         const val RETRY_BASE_MS = 1200L
 
         const val SYSTEM_PROMPT =

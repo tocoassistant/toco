@@ -42,7 +42,7 @@ class OnboardingActivity : AppCompatActivity() {
      * Treating them alike is what made an earlier version report the screening
      * role as granted whenever the overlay was.
      */
-    private enum class Kind { RUNTIME, OVERLAY, SCREENING_ROLE }
+    private enum class Kind { RUNTIME, OVERLAY, SCREENING_ROLE, ASSISTANT_ROLE }
 
     private data class Step(
         val label: String,
@@ -52,6 +52,7 @@ class OnboardingActivity : AppCompatActivity() {
     )
 
     private var askedOverlay = false
+    private var lastActionAt = 0L
 
     private val askRole =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -71,7 +72,13 @@ class OnboardingActivity : AppCompatActivity() {
 
         findViewById<OrbView>(R.id.onboardOrb).setState(OrbView.State.IDLE)
 
-        findViewById<TextView>(R.id.onboardAction).setOnClickListener { advance() }
+        findViewById<TextView>(R.id.onboardAction).setOnClickListener {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (now - lastActionAt >= 800L) {
+                lastActionAt = now
+                advance()
+            }
+        }
         findViewById<TextView>(R.id.onboardSkip).setOnClickListener { finishSetup() }
     }
 
@@ -111,6 +118,11 @@ class OnboardingActivity : AppCompatActivity() {
                 listOf(Manifest.permission.RECORD_AUDIO)
             ),
             Step(
+                getString(R.string.onboard_assistant),
+                getString(R.string.onboard_assistant_why),
+                kind = Kind.ASSISTANT_ROLE
+            ),
+            Step(
                 getString(R.string.onboard_screening),
                 getString(R.string.onboard_screening_why),
                 kind = Kind.SCREENING_ROLE
@@ -126,6 +138,7 @@ class OnboardingActivity : AppCompatActivity() {
     private fun granted(step: Step): Boolean = when (step.kind) {
         Kind.OVERLAY -> overlayGranted()
         Kind.SCREENING_ROLE -> screeningRoleHeld()
+        Kind.ASSISTANT_ROLE -> assistantRoleHeld()
         Kind.RUNTIME -> step.permissions.all { Permissions.has(this, it) }
     }
 
@@ -136,6 +149,27 @@ class OnboardingActivity : AppCompatActivity() {
             manager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
         } catch (e: Exception) {
             true
+        }
+    }
+
+
+    private fun assistantRoleHeld(): Boolean {
+        if (Build.VERSION.SDK_INT >= 29) {
+            val manager = getSystemService(Context.ROLE_SERVICE) as? RoleManager
+            try {
+                if (manager != null && manager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+                    return manager.isRoleHeld(RoleManager.ROLE_ASSISTANT)
+                }
+            } catch (_: Exception) {
+                // Some OEMs expose assistant selection only through Settings.
+            }
+        }
+
+        return try {
+            Settings.Secure.getString(contentResolver, "assistant")
+                ?.contains(packageName, ignoreCase = true) == true
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -206,12 +240,42 @@ class OnboardingActivity : AppCompatActivity() {
             return
         }
 
+        if (pending.any { it.kind == Kind.ASSISTANT_ROLE }) {
+            requestAssistantRole()
+            return
+        }
+
         if (pending.any { it.kind == Kind.SCREENING_ROLE }) {
             requestScreeningRole()
             return
         }
 
         openOverlaySettings()
+    }
+
+
+    private fun requestAssistantRole() {
+        if (Build.VERSION.SDK_INT >= 29) {
+            val manager = getSystemService(Context.ROLE_SERVICE) as? RoleManager
+            try {
+                if (manager != null && manager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+                    askRole.launch(manager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT))
+                    return
+                }
+            } catch (_: Exception) {
+                // Fall through to the system assistant settings page.
+            }
+        }
+
+        try {
+            askRole.launch(Intent(Settings.ACTION_VOICE_INPUT_SETTINGS))
+        } catch (_: Exception) {
+            try {
+                askRole.launch(Intent(Settings.ACTION_SETTINGS))
+            } catch (_: Exception) {
+                render()
+            }
+        }
     }
 
     private fun requestScreeningRole() {

@@ -11,3 +11,6 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.apk
+*.jks
+*.keystore
+keystore.properties
