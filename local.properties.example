@@ -11,3 +11,9 @@ GROQ_API_KEY=
 
 # The Android SDK path is usually written here automatically by the IDE.
 # sdk.dir=/path/to/android/sdk
+
+# Google OAuth Web client ID used by native Android Credential Manager sign-in.
+GOOGLE_WEB_CLIENT_ID=686211836517-p4thhoq74e4urfdutgeqsmv702f1trqd.apps.googleusercontent.com
+
+# Google OAuth (Web client ID; public identifier, not a client secret)
+GOOGLE_WEB_CLIENT_ID=686211836517-p4thhoq74e4urfdutgeqsmv702f1trqd.apps.googleusercontent.com

@@ -1,7 +1,6 @@
 package com.toco.ai.core
 
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -13,7 +12,6 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.Executors
 
@@ -53,29 +51,18 @@ class AuthManager(private val context: Context) {
 
     fun accessToken(): String? = securePrefs.getString(KEY_ACCESS, null)
 
-    fun googleIntent(): Intent {
-        val redirect = URLEncoder.encode(REDIRECT_URI, "UTF-8")
-        val url = "${BuildConfig.SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=$redirect"
-        return Intent(Intent.ACTION_VIEW, Uri.parse(url))
-    }
-
-    fun acceptOAuthCallback(uri: Uri): Result {
-        val values = mutableMapOf<String, String>()
-        uri.query?.split("&")?.forEach { putPair(it, values) }
-        uri.fragment?.split("&")?.forEach { putPair(it, values) }
-
-        val error = values["error_description"] ?: values["error"]
-        if (!error.isNullOrBlank()) return Result(false, Uri.decode(error))
-
-        val access = values["access_token"]
-        if (access.isNullOrBlank()) {
-            return Result(false, "Google sign-in returned without a session. Check the Google provider and redirect URL in Supabase.")
+    fun signInWithGoogleIdToken(idToken: String, callback: (Result) -> Unit) {
+        if (idToken.isBlank()) {
+            callback(Result(false, "Google did not return a valid sign-in token."))
+            return
         }
-
-        val refresh = values["refresh_token"]
-        val expires = values["expires_in"]?.toLongOrNull() ?: 3600L
-        saveSession(access, refresh, System.currentTimeMillis() + expires * 1000L, null, "Google account")
-        return Result(true, "Signed in with Google")
+        async(callback) {
+            val response = authRequest(
+                "/auth/v1/token?grant_type=id_token",
+                JSONObject().put("provider", "google").put("id_token", idToken)
+            )
+            parseSessionResponse(response, "Google account")
+        }
     }
 
     fun signInTocoId(rawId: String, password: String, callback: (Result) -> Unit) {
@@ -116,7 +103,7 @@ class AuthManager(private val context: Context) {
                 upsertProfile(email)
                 parsed
             } else if (response.code in 200..299) {
-                Result(false, "TOCO ID created, but this Supabase project currently requires email confirmation. Use Google/phone until @toco.io mail delivery is enabled.")
+                Result(false, "TOCO ID was reserved, but Supabase is requiring email confirmation. Disable Confirm email for TOCO IDs until TOCO Mail is live, then create/sign in again.")
             } else parsed
         }
     }
@@ -185,7 +172,11 @@ class AuthManager(private val context: Context) {
 
     private fun parseSessionResponse(response: HttpResult, identity: String): Result {
         if (response.code !in 200..299) {
-            return Result(false, response.errorMessage("Sign-in failed."))
+            val msg = response.errorMessage("Sign-in failed.")
+            if (msg.contains("Email not confirmed", ignoreCase = true)) {
+                return Result(false, "This TOCO ID is waiting for email confirmation. For @toco.io IDs, disable Confirm email in Supabase Auth until TOCO Mail is live.")
+            }
+            return Result(false, msg)
         }
         val json = try { JSONObject(response.body) } catch (_: Exception) { JSONObject() }
         val access = json.optString("access_token")
@@ -289,7 +280,6 @@ class AuthManager(private val context: Context) {
     }
 
     private companion object {
-        const val REDIRECT_URI = "toco://auth/callback"
         const val KEY_ACCESS = "access_token"
         const val KEY_REFRESH = "refresh_token"
         const val KEY_EXPIRES = "expires_at"

@@ -88,16 +88,8 @@
 
         <activity
             android:name=".ui.auth.LoginActivity"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:theme="@style/Theme.Toco">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="toco" android:host="auth" android:path="/callback" />
-            </intent-filter>
-        </activity>
+            android:exported="false"
+            android:theme="@style/Theme.Toco" />
 
         <activity
             android:name=".ui.onboarding.OnboardingActivity"

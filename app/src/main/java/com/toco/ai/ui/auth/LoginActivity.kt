@@ -1,6 +1,15 @@
 package com.toco.ai.ui.auth
 
 import android.content.Intent
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.lifecycle.lifecycleScope
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.toco.ai.BuildConfig
+import kotlinx.coroutines.launch
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -25,10 +34,6 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         auth = AuthManager(this)
-        if (intent?.data?.scheme == "toco") {
-            val result = auth.acceptOAuthCallback(intent.data!!)
-            if (result.ok) { goNext(); return }
-        }
         if (auth.isSignedIn) { goNext(); return }
         setContentView(R.layout.activity_login)
 
@@ -60,7 +65,7 @@ class LoginActivity : AppCompatActivity() {
             status.text = "Private by design. Secured with your account."
         }
 
-        findViewById<View>(R.id.googleLogin).setOnClickListener { startActivity(auth.googleIntent()) }
+        findViewById<View>(R.id.googleLogin).setOnClickListener { signInWithGoogleNative() }
         findViewById<View>(R.id.phoneLogin).setOnClickListener { mode("phone") }
         createLink.setOnClickListener { mode("create") }
         back.setOnClickListener { mode("login") }
@@ -110,12 +115,40 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent); setIntent(intent)
-        intent.data?.let { uri ->
-            if (uri.scheme == "toco") {
-                val result = auth.acceptOAuthCallback(uri)
-                if (result.ok) goNext() else loading(false, result.message)
+    private fun signInWithGoogleNative() {
+        val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID.trim()
+        if (clientId.isBlank()) {
+            loading(false, "Google sign-in needs GOOGLE_WEB_CLIENT_ID. Add the Web OAuth client ID from Google Cloud to your build secret.")
+            return
+        }
+
+        loading(true, "Opening Google sign-in…")
+        lifecycleScope.launch {
+            try {
+                val googleOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(clientId)
+                    .setAutoSelectEnabled(false)
+                    .build()
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleOption)
+                    .build()
+                val result = CredentialManager.create(this@LoginActivity)
+                    .getCredential(this@LoginActivity, request)
+                val credential = result.credential
+                if (credential is CustomCredential &&
+                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                ) {
+                    val google = GoogleIdTokenCredential.createFrom(credential.data)
+                    loading(true, "Securing your TOCO session…")
+                    auth.signInWithGoogleIdToken(google.idToken, ::handle)
+                } else {
+                    loading(false, "Google sign-in returned an unsupported credential.")
+                }
+            } catch (e: GetCredentialException) {
+                loading(false, "Google sign-in was cancelled or unavailable. ${e.message.orEmpty()}".trim())
+            } catch (e: Exception) {
+                loading(false, "Google sign-in could not start. ${e.message.orEmpty()}".trim())
             }
         }
     }
