@@ -1,199 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bg"
-    android:fillViewport="true">
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:fillViewport="true" android:overScrollMode="never">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingLeft="24dp"
-        android:paddingRight="24dp"
-        android:paddingTop="52dp"
-        android:paddingBottom="32dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:gravity="center_horizontal"
+        android:paddingLeft="28dp" android:paddingRight="28dp" android:paddingTop="42dp" android:paddingBottom="28dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="TOCO"
-            android:textColor="@color/accent_light"
-            android:textSize="42sp"
-            android:textStyle="bold" />
+        <ImageView android:id="@+id/authLogo" android:layout_width="112dp" android:layout_height="112dp"
+            android:src="@drawable/bg_toco_orb" android:contentDescription="TOCO" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="One private agent. Your account."
-            android:textColor="@color/text_primary"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp"
+            android:text="TOCO" android:textColor="@color/accent_light" android:textSize="28sp" android:textStyle="bold" android:letterSpacing="0.08" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Sign in to keep your TOCO identity and synced data available after reinstalling the app."
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+        <TextView android:id="@+id/authTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+            android:text="Welcome back" android:textColor="@color/text_primary" android:textSize="30sp" android:textStyle="bold" />
 
-        <Button
-            android:id="@+id/googleLogin"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="28dp"
-            android:text="Continue with Google"
-            android:textAllCaps="false" />
+        <TextView android:id="@+id/authSubtitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp"
+            android:text="Your AI agent, ready when you are." android:textColor="@color/text_secondary" android:textSize="14sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:text="TOCO ID"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Choose a private identity such as wind@toco.io"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
-        <EditText
-            android:id="@+id/tocoId"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_command_bar"
-            android:hint="username@toco.io"
-            android:inputType="textEmailAddress"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_hint" />
-
-        <EditText
-            android:id="@+id/tocoPassword"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_command_bar"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_hint" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/tocoLogin"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_weight="1"
-                android:text="Sign in"
-                android:textAllCaps="false" />
-
-            <Button
-                android:id="@+id/tocoCreate"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_marginLeft="8dp"
-                android:layout_weight="1"
-                android:text="Create ID"
-                android:textAllCaps="false" />
+        <LinearLayout android:id="@+id/idPanel" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:layout_marginTop="28dp">
+            <EditText android:id="@+id/tocoId" android:layout_width="match_parent" android:layout_height="58dp"
+                android:background="@drawable/bg_auth_input" android:hint="TOCO ID or email" android:singleLine="true"
+                android:inputType="textEmailAddress" android:textColor="@color/text_primary" android:textColorHint="@color/text_hint" android:textSize="15sp" />
+            <EditText android:id="@+id/tocoPassword" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="12dp"
+                android:background="@drawable/bg_auth_input" android:hint="Password" android:singleLine="true"
+                android:inputType="textPassword" android:textColor="@color/text_primary" android:textColorHint="@color/text_hint" android:textSize="15sp" />
+            <TextView android:id="@+id/forgotPassword" android:layout_width="wrap_content" android:layout_height="44dp" android:layout_gravity="end"
+                android:gravity="center_vertical" android:text="Forgot password?" android:textColor="@color/accent_light" android:textSize="13sp" />
+            <TextView android:id="@+id/tocoLogin" android:layout_width="match_parent" android:layout_height="58dp" android:background="@drawable/bg_auth_button"
+                android:gravity="center" android:text="Continue  →" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" />
         </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:text="PHONE"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+        <LinearLayout android:id="@+id/createPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+            android:layout_marginTop="28dp" android:visibility="gone">
+            <EditText android:id="@+id/createUsername" android:layout_width="match_parent" android:layout_height="58dp" android:background="@drawable/bg_auth_input"
+                android:hint="Choose your username" android:singleLine="true" android:inputType="text" android:textColor="@color/text_primary" android:textColorHint="@color/text_hint" />
+            <TextView android:id="@+id/idPreview" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp"
+                android:text="yourname@toco.io" android:textColor="@color/accent_light" android:textSize="13sp" />
+            <EditText android:id="@+id/createPassword" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="12dp" android:background="@drawable/bg_auth_input"
+                android:hint="Create password" android:singleLine="true" android:inputType="textPassword" android:textColor="@color/text_primary" android:textColorHint="@color/text_hint" />
+            <TextView android:id="@+id/tocoCreate" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="18dp" android:background="@drawable/bg_auth_button"
+                android:gravity="center" android:text="Create account  →" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/phoneNumber"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_command_bar"
-            android:hint="+880…"
-            android:inputType="phone"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_hint" />
+        <LinearLayout android:id="@+id/phonePanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+            android:layout_marginTop="28dp" android:visibility="gone">
+            <EditText android:id="@+id/phoneNumber" android:layout_width="match_parent" android:layout_height="58dp" android:background="@drawable/bg_auth_input"
+                android:hint="+880  Your phone number" android:singleLine="true" android:inputType="phone" android:textColor="@color/text_primary" android:textColorHint="@color/text_hint" />
+            <TextView android:id="@+id/sendPhoneCode" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="16dp" android:background="@drawable/bg_auth_button"
+                android:gravity="center" android:text="Send verification code  →" android:textColor="#FFFFFF" android:textStyle="bold" />
+            <EditText android:id="@+id/phoneCode" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="14dp" android:background="@drawable/bg_auth_input"
+                android:hint="6-digit verification code" android:singleLine="true" android:inputType="number" android:textColor="@color/text_primary" android:textColorHint="@color/text_hint" android:visibility="gone" />
+            <TextView android:id="@+id/verifyPhone" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="14dp" android:background="@drawable/bg_auth_button"
+                android:gravity="center" android:text="Verify &amp; continue  →" android:textColor="#FFFFFF" android:textStyle="bold" android:visibility="gone" />
+        </LinearLayout>
 
-        <Button
-            android:id="@+id/sendPhoneCode"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="10dp"
-            android:text="Send verification code"
-            android:textAllCaps="false" />
+        <LinearLayout android:id="@+id/socialPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="24dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="—  OR CONTINUE WITH  —"
+                android:textColor="@color/text_hint" android:textSize="11sp" android:letterSpacing="0.12" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="16dp">
+                <TextView android:id="@+id/googleLogin" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:background="@drawable/bg_auth_social"
+                    android:gravity="center" android:text="G   Google" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+                <Space android:layout_width="12dp" android:layout_height="1dp" />
+                <TextView android:id="@+id/phoneLogin" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:background="@drawable/bg_auth_social"
+                    android:gravity="center" android:text="☎   Phone" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+            </LinearLayout>
+            <TextView android:id="@+id/createAccountLink" android:layout_width="match_parent" android:layout_height="52dp" android:gravity="center"
+                android:text="New to TOCO?  Create an account" android:textColor="@color/accent_light" android:textSize="13sp" />
+            <TextView android:id="@+id/backToLogin" android:layout_width="match_parent" android:layout_height="52dp" android:gravity="center"
+                android:text="← Back to sign in" android:textColor="@color/accent_light" android:textSize="13sp" android:visibility="gone" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/phoneCode"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_command_bar"
-            android:hint="Verification code"
-            android:inputType="number"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_hint"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/verifyPhone"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="10dp"
-            android:text="Verify &amp; sign in"
-            android:textAllCaps="false"
-            android:visibility="gone" />
-
-        <ProgressBar
-            android:id="@+id/loginProgress"
-            style="?android:attr/progressBarStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="22dp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/loginStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:text="Your session is encrypted on this device."
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:gravity="center"
-            android:text="Beta 1.5 · TOCO never needs your Google password or SMS code outside this screen."
-            android:textColor="@color/text_hint"
-            android:textSize="11sp" />
-
+        <ProgressBar android:id="@+id/loginProgress" style="?android:attr/progressBarStyleSmall" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="12dp" android:indeterminateTint="@color/accent" android:visibility="gone" />
+        <TextView android:id="@+id/loginStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+            android:gravity="center" android:text="Private by design. Secured with your account." android:textColor="@color/text_secondary" android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>
