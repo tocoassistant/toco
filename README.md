@@ -135,3 +135,16 @@ One line in `SkillRegistry.bootstrap()`. It appears in Models automatically.
 Never in source. Put them in `local.properties` (git-ignored) and read via
 `BuildConfig`. Note this is still extractable from a built APK — fine for your
 own phone, not for a build you hand out.
+
+## Beta 1.5 account system
+
+TOCO now gates first launch behind Supabase Auth and stores the device session with Android encrypted preferences.
+
+Supported client flows:
+- Google OAuth via `toco://auth/callback` (Google must be enabled in Supabase Auth and the redirect URI must be allow-listed).
+- Phone OTP via Supabase Auth.
+- TOCO ID/password using the `username@toco.io` identity format.
+
+The `@toco.io` identity is an account namespace in this beta. Receiving real internet email at those addresses requires a separately configured mail domain/provider. If Supabase email confirmation is enabled before that mail system exists, new TOCO-ID sign-ups will not receive a usable session; use Google/phone or disable email confirmation during the beta.
+
+Never put a Supabase service-role key in the Android app. The publishable key is intentionally client-safe; privileged operations stay behind RLS/server functions.

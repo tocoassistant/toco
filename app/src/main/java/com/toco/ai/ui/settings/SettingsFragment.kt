@@ -154,8 +154,8 @@ class SettingsFragment : Fragment() {
             on = Ai.isReady()
         ) {
             toast(
-                if (Ai.isReady()) "Gemini key is present in this build."
-                else "No key in this build. Add GEMINI_API_KEY as a GitHub secret."
+                if (Ai.isReady()) "An AI provider key is present in this build."
+                else "No AI key reached this build. Check GEMINI_API_KEY / GROQ_API_KEY in the build environment."
             )
         }
 

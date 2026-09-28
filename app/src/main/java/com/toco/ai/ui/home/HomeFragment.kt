@@ -14,6 +14,7 @@ import android.widget.ScrollView
 import android.view.Gravity
 import androidx.core.content.ContextCompat
 import com.toco.ai.core.ConversationStore
+import com.toco.ai.core.TaskStore
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -123,6 +124,7 @@ class HomeFragment : Fragment() {
         chatList = root.findViewById(R.id.chatList)
         chatScroll = root.findViewById(R.id.chatScroll)
         restoreConversation()
+        renderPulse()
     }
 
     private fun renderGreeting() {
@@ -232,6 +234,7 @@ class HomeFragment : Fragment() {
      * freeze the UI (and Android would throw).
      */
     private fun dispatch(command: String) {
+        if (tryHandleTask(command)) return
         if (busy) {
             // Say so rather than silently ignoring it, or the app looks stuck.
             toast("Still working on the last one.")
@@ -259,7 +262,9 @@ class HomeFragment : Fragment() {
 
         if (!Ai.isReady()) {
             done()
-            tvOrbState.setText(getString(R.string.no_module))
+            val message = getString(R.string.ai_missing_reply)
+            tvOrbState.text = message
+            addChat("assistant", message)
             orb.setState(OrbView.State.IDLE)
             resetSoon()
             return
@@ -282,7 +287,8 @@ class HomeFragment : Fragment() {
                         orb.setState(OrbView.State.IDLE)
                     }
                     is CommandEngine.Reply.Unavailable -> {
-                        tvOrbState.setText(reply.message)
+                        tvOrbState.text = reply.message
+                        addChat("assistant", reply.message)
                         orb.setState(OrbView.State.IDLE)
                         resetSoon()
                     }
@@ -445,6 +451,34 @@ class HomeFragment : Fragment() {
         }
         bubble.layoutParams = params
         chatList.addView(row)
+    }
+
+    private fun tryHandleTask(command: String): Boolean {
+        val clean = command.trim()
+        val lower = clean.lowercase()
+        val prefixes = listOf("remember to ", "add task ", "task: ", "todo ", "to-do ")
+        val prefix = prefixes.firstOrNull { lower.startsWith(it) } ?: return false
+        val body = clean.substring(prefix.length).trim()
+        if (body.isBlank()) return false
+        etCommand.setText("")
+        addChat("user", clean)
+        TaskStore.add(requireContext(), body)
+        val reply = "Got it. I added that to Toco Tasks."
+        addChat("assistant", reply)
+        tvOrbState.text = "Task saved"
+        renderPulse()
+        resetSoon()
+        return true
+    }
+
+    private fun renderPulse() {
+        if (!isAdded) return
+        val pending = TaskStore.tasks(requireContext()).filter { it.state == "Pending" }
+        requireView().findViewById<TextView>(R.id.tvTaskCount).text =
+            if (pending.isEmpty()) "No pending tasks" else "${pending.size} pending"
+        requireView().findViewById<TextView>(R.id.tvPulseText).text = pending.firstOrNull()?.let {
+            "Next: ${it.text}"
+        } ?: "Quiet right now. Ask TOCO to remember something for you."
     }
 
     // ---------------- entrance animation ----------------

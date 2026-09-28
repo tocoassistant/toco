@@ -3,16 +3,21 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
-// Gemini key comes from local.properties, which is git-ignored so the key
-// never reaches the repo. Absent key -> empty string -> TOCO reports that the
-// AI is not configured instead of crashing.
+// AI keys come from local.properties for local builds, or environment variables
+// for CI/GitHub Actions builds. Secrets stay out of source control either way.
 def localProps = new Properties()
 def localFile = rootProject.file("local.properties")
 if (localFile.exists()) {
     localFile.withInputStream { localProps.load(it) }
 }
-def geminiKey = localProps.getProperty("GEMINI_API_KEY", "")
-def groqKey = localProps.getProperty("GROQ_API_KEY", "")
+def geminiKey = localProps.getProperty("GEMINI_API_KEY", System.getenv("GEMINI_API_KEY") ?: "")
+def groqKey = localProps.getProperty("GROQ_API_KEY", System.getenv("GROQ_API_KEY") ?: "")
+
+// Escape values before embedding them in generated BuildConfig.java.
+def quoteForBuildConfig = { value ->
+    def safe = (value ?: "").replace("\\", "\\\\").replace("\"", "\\\"")
+    return "\"${safe}\""
+}
 
 android {
     namespace 'com.toco.ai'
@@ -22,11 +27,13 @@ android {
         applicationId "com.toco.ai"
         minSdk 24
         targetSdk 34
-        versionCode 2
-        versionName "0.1.2"
+        versionCode 5
+        versionName "0.1.5-beta"
 
-        buildConfigField "String", "GEMINI_API_KEY", "\"" + geminiKey + "\""
-        buildConfigField "String", "GROQ_API_KEY", "\"" + groqKey + "\""
+        buildConfigField "String", "GEMINI_API_KEY", quoteForBuildConfig(geminiKey)
+        buildConfigField "String", "GROQ_API_KEY", quoteForBuildConfig(groqKey)
+        buildConfigField "String", "SUPABASE_URL", quoteForBuildConfig("https://kgmxweluxummxzoqhniv.supabase.co")
+        buildConfigField "String", "SUPABASE_PUBLISHABLE_KEY", quoteForBuildConfig("sb_publishable_1GzmPsDjPqDPQKzDiPL5WQ_6mlu2_oX")
     }
 
     // AGP 8 turns BuildConfig off by default; the Gemini key needs it.
@@ -60,4 +67,5 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.activity:activity-ktx:1.8.2'
     implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 }

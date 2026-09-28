@@ -82,7 +82,7 @@ object Ai {
      * through — a missing key is not fixed by asking a second time.
      */
     private fun shouldFallBack(result: AIResult): Boolean =
-        result is AIResult.Failed
+        result is AIResult.Failed || result is AIResult.NotConfigured
 
     fun clearHistory() {
         history.clear()
