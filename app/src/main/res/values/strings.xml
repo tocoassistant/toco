@@ -18,7 +18,7 @@
     <!-- Nav -->
     <string name="nav_task">Task</string>
     <string name="nav_models">Models</string>
-    <string name="nav_analyse">Analyse</string>
+    <string name="nav_connectors">Connectors</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_home">HOME</string>
 
@@ -147,4 +147,20 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="listen_working">Working\u2026</string>
     <string name="listen_speaking">TOCO</string>
     <string name="listen_tap">Tap the orb and speak</string>
+
+    <string name="connectors_title">Connectors</string>
+    <string name="connectors_subtitle">Connect accounts and choose exactly what TOCO may do as your agent.</string>
+    <string name="connector_permission">Permission</string>
+    <string name="connector_read">Read</string>
+    <string name="connector_draft">Draft</string>
+    <string name="connector_act">Act</string>
+    <string name="connector_connect">Connect</string>
+    <string name="connector_coming">Account linking is ready for provider OAuth setup.</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_history">Chat History</string>
+    <string name="profile_history_desc">Meaningful conversations and agent work lasting at least 5 minutes.</string>
+    <string name="profile_activity">Activity Log</string>
+    <string name="profile_activity_desc">Actions TOCO performed on your device and connected accounts.</string>
+    <string name="history_empty">No saved history yet. Quick commands are intentionally not saved.</string>
+    <string name="activity_empty">No agent activity recorded yet.</string>
 </resources>

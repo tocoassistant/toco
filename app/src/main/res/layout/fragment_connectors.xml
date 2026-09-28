@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/connectors_title" android:textColor="@color/text_primary" android:textSize="30sp" android:textStyle="bold"/>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/connectors_subtitle" android:textColor="@color/text_secondary" android:textSize="15sp"/>
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:text="Permission scope" android:textColor="@color/accent_light" android:textStyle="bold"/>
+  <RadioGroup android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+   <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/connector_read" android:textColor="@color/text_primary" android:checked="true"/>
+   <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/connector_draft" android:textColor="@color/text_primary"/>
+   <RadioButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/connector_act" android:textColor="@color/text_primary"/>
+  </RadioGroup>
+  <Button android:id="@+id/connectGmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:text="Gmail  ·  Connect"/>
+  <Button android:id="@+id/connectDiscord" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Discord  ·  Connect"/>
+  <Button android:id="@+id/connectInstagram" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Instagram  ·  Connect"/>
+  <Button android:id="@+id/connectWhatsApp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="WhatsApp  ·  Connect"/>
+ </LinearLayout>
+</ScrollView>

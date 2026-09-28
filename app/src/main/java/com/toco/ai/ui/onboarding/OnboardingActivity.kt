@@ -52,6 +52,7 @@ class OnboardingActivity : AppCompatActivity() {
     )
 
     private var askedOverlay = false
+    private var waitingForSystemStep = false
     private var lastActionAt = 0L
 
     private val askRole =
@@ -85,6 +86,13 @@ class OnboardingActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         render()
+        // System role/settings screens return through onResume rather than a
+        // runtime-permission callback on several OEMs. Continue the wizard
+        // automatically only when we actually launched one of those screens.
+        if (waitingForSystemStep) {
+            waitingForSystemStep = false
+            findViewById<View>(R.id.onboardAction).postDelayed({ advance() }, 250L)
+        }
     }
 
     // ---------------- steps ----------------
@@ -259,6 +267,7 @@ class OnboardingActivity : AppCompatActivity() {
             val manager = getSystemService(Context.ROLE_SERVICE) as? RoleManager
             try {
                 if (manager != null && manager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+                    waitingForSystemStep = true
                     askRole.launch(manager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT))
                     return
                 }
@@ -268,9 +277,11 @@ class OnboardingActivity : AppCompatActivity() {
         }
 
         try {
+            waitingForSystemStep = true
             askRole.launch(Intent(Settings.ACTION_VOICE_INPUT_SETTINGS))
         } catch (_: Exception) {
             try {
+                waitingForSystemStep = true
                 askRole.launch(Intent(Settings.ACTION_SETTINGS))
             } catch (_: Exception) {
                 render()
@@ -285,6 +296,7 @@ class OnboardingActivity : AppCompatActivity() {
         if (!manager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) return
 
         try {
+            waitingForSystemStep = true
             askRole.launch(manager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
         } catch (e: Exception) {
             // Some ROMs hide the role; the broadcast fallback still applies.
@@ -293,6 +305,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun openOverlaySettings() {
         askedOverlay = true
+        waitingForSystemStep = true
         try {
             startActivity(
                 Intent("android.settings.action.MANAGE_OVERLAY_PERMISSION")

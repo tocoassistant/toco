@@ -21,6 +21,8 @@ import com.toco.ai.engine.CommandEngine
 import com.toco.ai.engine.CommandSequencer
 import com.toco.ai.skill.SkillResult
 import com.toco.ai.ui.MainActivity
+import com.toco.ai.ui.profile.ProfileActivity
+import android.content.Intent
 import com.toco.ai.ui.common.ChooserDialog
 import com.toco.ai.ui.access.AccessSheet
 import com.toco.ai.ui.widget.OrbView
@@ -137,6 +139,12 @@ class HomeFragment : Fragment() {
 
         requireView().findViewById<View>(R.id.btnPermissions).setOnClickListener {
             AccessSheet().show(parentFragmentManager, AccessSheet.TAG)
+        }
+
+        requireView().findViewById<View>(R.id.btnProfile).setOnClickListener {
+            if (Taps.allow("profile")) {
+                startActivity(Intent(requireContext(), ProfileActivity::class.java))
+            }
         }
 
         etCommand.setOnEditorActionListener { _, actionId, _ ->

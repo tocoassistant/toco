@@ -6,7 +6,7 @@ import androidx.fragment.app.Fragment
 import com.toco.ai.R
 import com.toco.ai.ui.access.AccessSheet
 import com.toco.ai.ui.common.SimpleFragment
-import com.toco.ai.ui.diagnostics.CallDiagnosticsFragment
+import com.toco.ai.ui.connectors.ConnectorsFragment
 import com.toco.ai.ui.home.HomeFragment
 import com.toco.ai.ui.models.ModelsFragment
 import com.toco.ai.ui.nav.TocoBottomNav
@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         TASK -> SimpleFragment.create(R.string.task_title, R.string.task_body)
         MODELS -> ModelsFragment()
         HOME -> HomeFragment()
-        ANALYSE -> CallDiagnosticsFragment()
+        CONNECTORS -> ConnectorsFragment()
         else -> SettingsFragment()
     }
 
@@ -69,13 +69,13 @@ class MainActivity : AppCompatActivity() {
         const val TASK = 0
         const val MODELS = 1
         const val HOME = 2
-        const val ANALYSE = 3
+        const val CONNECTORS = 3
 
         val TABS = listOf(
             TocoBottomNav.Tab(android.R.drawable.ic_menu_agenda, R.string.nav_task),
             TocoBottomNav.Tab(android.R.drawable.ic_menu_gallery, R.string.nav_models),
             TocoBottomNav.Tab(android.R.drawable.ic_menu_compass, R.string.nav_home),
-            TocoBottomNav.Tab(android.R.drawable.ic_menu_search, R.string.nav_analyse),
+            TocoBottomNav.Tab(android.R.drawable.ic_menu_search, R.string.nav_connectors),
             TocoBottomNav.Tab(android.R.drawable.ic_menu_manage, R.string.nav_settings)
         )
     }
