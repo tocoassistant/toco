@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import com.toco.ai.R
 import com.toco.ai.core.Prefs
 import com.toco.ai.ui.MainActivity
+import com.toco.ai.service.WakeWordService
 import com.toco.ai.ui.widget.OrbView
 import com.toco.ai.util.Permissions
 
@@ -328,6 +329,9 @@ class OnboardingActivity : AppCompatActivity() {
         // Report calls from now on, not the whole call history.
         prefs.lastMissedCallSeen = System.currentTimeMillis()
         prefs.onboardingDone = true
+        if (Permissions.has(this, Manifest.permission.RECORD_AUDIO)) {
+            try { WakeWordService.start(this) } catch (_: Exception) {}
+        }
 
         startActivity(Intent(this, MainActivity::class.java))
         finish()

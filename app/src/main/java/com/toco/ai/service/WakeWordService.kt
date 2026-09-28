@@ -124,7 +124,8 @@ class WakeWordService : Service() {
 
     override fun onDestroy() {
         running = false
-        Prefs(this).wakeEnabled = false
+        // Do not clear the user preference here. Android/OEMs may kill a foreground
+        // service; keeping the preference lets the assistant/boot path restore it.
         handler.removeCallbacksAndMessages(null)
         listenerThread?.interrupt()
         listenerThread = null
@@ -322,7 +323,15 @@ class WakeWordService : Service() {
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {}
-            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onPartialResults(partialResults: Bundle?) {
+                if (awaitingCommand) return
+                val heard = partialResults
+                    ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    ?: return
+                if (containsWakePhrase(heard)) {
+                    try { recognizer?.stopListening() } catch (_: Exception) {}
+                }
+            }
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
@@ -331,7 +340,8 @@ class WakeWordService : Service() {
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
         }
 
@@ -353,6 +363,14 @@ class WakeWordService : Service() {
     }
 
     // ---------------- wake word + command ----------------
+
+    private fun containsWakePhrase(heard: List<String>): Boolean {
+        val phrases = Prefs(this).wakePhrases()
+        return heard.any { candidate ->
+            val lower = CommandText.normalize(candidate)
+            phrases.any { lower == it || lower.startsWith("$it ") }
+        }
+    }
 
     private fun handleHeard(heard: List<String>) {
         val prefs = Prefs(this)
@@ -559,7 +577,8 @@ class WakeWordService : Service() {
             true
         } catch (e: Exception) {
             lastError = "Couldn't start listening: " + e.message
-            Prefs(this).wakeEnabled = false
+            // Keep the preference: the system assistant can restore listening
+            // when Android next allows microphone foreground work.
             stopSelf()
             false
         }
@@ -595,6 +614,8 @@ class WakeWordService : Service() {
         private const val MAX_ERRORS = 8
 
         fun start(context: Context) {
+            Prefs(context).wakeEnabled = true
+            lastError = null
             val intent = Intent(context, WakeWordService::class.java)
             if (Build.VERSION.SDK_INT >= 26) {
                 context.startForegroundService(intent)

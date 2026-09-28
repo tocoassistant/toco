@@ -9,6 +9,11 @@ import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.view.Gravity
+import androidx.core.content.ContextCompat
+import com.toco.ai.core.ConversationStore
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -39,6 +44,8 @@ class HomeFragment : Fragment() {
     private lateinit var commandBar: View
     private lateinit var topBar: View
     private lateinit var etCommand: EditText
+    private lateinit var chatList: LinearLayout
+    private lateinit var chatScroll: ScrollView
 
     private val engine = CommandEngine()
     private val sequencer = CommandSequencer(engine)
@@ -113,6 +120,9 @@ class HomeFragment : Fragment() {
         tvOrbState = root.findViewById(R.id.tvOrbState)
         commandBar = root.findViewById(R.id.commandBar)
         etCommand = root.findViewById(R.id.etCommand)
+        chatList = root.findViewById(R.id.chatList)
+        chatScroll = root.findViewById(R.id.chatScroll)
+        restoreConversation()
     }
 
     private fun renderGreeting() {
@@ -135,6 +145,10 @@ class HomeFragment : Fragment() {
         }
         requireView().findViewById<View>(R.id.btnSend).setOnClickListener {
             if (Taps.allow("send")) submitTyped()
+        }
+
+        requireView().findViewById<View>(R.id.btnAttach).setOnClickListener {
+            toast("Attachments will be added with connector file access.")
         }
 
         requireView().findViewById<View>(R.id.btnPermissions).setOnClickListener {
@@ -226,6 +240,7 @@ class HomeFragment : Fragment() {
 
         busy = true
         etCommand.setText("")
+        addChat("user", command)
 
         val steps = sequencer.split(command)
 
@@ -261,7 +276,8 @@ class HomeFragment : Fragment() {
                 when (reply) {
                     is CommandEngine.Reply.Action -> applyAction(reply.result)
                     is CommandEngine.Reply.Answer -> {
-                        tvOrbState.setText(reply.text)
+                        tvOrbState.setText("Done")
+                        addChat("assistant", reply.text)
                         if (prefs.voiceReplies) Voice.speak(requireContext(), reply.text)
                         orb.setState(OrbView.State.IDLE)
                     }
@@ -331,12 +347,14 @@ class HomeFragment : Fragment() {
         done()
         when (result) {
             is SkillResult.Ok -> {
-                tvOrbState.setText(result.message)
+                tvOrbState.setText("Done")
+                addChat("assistant", result.message)
                 if (prefs.voiceReplies) Voice.speak(requireContext(), result.message)
                 resetSoon()
             }
             is SkillResult.Failed -> {
-                tvOrbState.setText(result.message)
+                tvOrbState.setText("Couldn’t finish")
+                addChat("assistant", result.message)
                 resetSoon()
             }
             is SkillResult.NeedsPermission -> {
@@ -393,6 +411,40 @@ class HomeFragment : Fragment() {
 
     private fun toast(message: String) {
         if (isAdded) Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
+
+
+    private fun restoreConversation() {
+        val previous = ConversationStore.messages(requireContext()).takeLast(30)
+        if (previous.isNotEmpty()) {
+            requireView().findViewById<View>(R.id.welcomeCard).visibility = View.GONE
+            previous.forEach { renderBubble(it.role, it.text) }
+            chatScroll.post { chatScroll.fullScroll(View.FOCUS_DOWN) }
+        }
+    }
+
+    private fun addChat(role: String, text: String) {
+        if (!isAdded || text.isBlank()) return
+        ConversationStore.add(requireContext(), role, text)
+        requireView().findViewById<View>(R.id.welcomeCard).visibility = View.GONE
+        renderBubble(role, text)
+        chatScroll.post { chatScroll.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    private fun renderBubble(role: String, text: String) {
+        val row = layoutInflater.inflate(R.layout.item_chat_message, chatList, false) as LinearLayout
+        val bubble = row.findViewById<TextView>(R.id.chatBubble)
+        bubble.text = text
+        val params = bubble.layoutParams as LinearLayout.LayoutParams
+        if (role == "user") {
+            params.gravity = Gravity.END
+            bubble.setBackgroundResource(R.drawable.bg_chat_user)
+        } else {
+            params.gravity = Gravity.START
+            bubble.setBackgroundResource(R.drawable.bg_chat_agent)
+        }
+        bubble.layoutParams = params
+        chatList.addView(row)
     }
 
     // ---------------- entrance animation ----------------

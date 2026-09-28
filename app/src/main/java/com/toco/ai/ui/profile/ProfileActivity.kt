@@ -5,6 +5,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.toco.ai.R
 import com.toco.ai.core.EventLog
+import com.toco.ai.core.ConversationStore
 import com.toco.ai.core.Prefs
 
 class ProfileActivity : AppCompatActivity() {
@@ -19,6 +20,6 @@ class ProfileActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.activityContent).text = if (entries.isEmpty()) getString(R.string.activity_empty) else entries.take(80).joinToString("\n\n")
         // History backend is intentionally represented separately from the device action log.
         // Quick commands never appear here; Supabase-backed meaningful sessions plug into this panel.
-        findViewById<TextView>(R.id.historyContent).setText(R.string.history_empty)
+        findViewById<TextView>(R.id.historyContent).text = ConversationStore.summary(this)
     }
 }
