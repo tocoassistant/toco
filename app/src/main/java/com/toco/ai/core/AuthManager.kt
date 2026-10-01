@@ -108,16 +108,41 @@ class AuthManager(private val context: Context) {
         }
     }
 
-    fun sendPhoneCode(phone: String, callback: (Result) -> Unit) {
-        val clean = phone.trim()
+    /**
+     * Requests a phone OTP. TOCO prefers WhatsApp because it gives the cleanest
+     * branded verification experience once Twilio/WhatsApp is configured.
+     * If WhatsApp is rejected immediately by the provider, we fall back to SMS.
+     * A successful WhatsApp API response cannot prove the recipient actually has
+     * WhatsApp, so the UI also exposes an explicit SMS fallback.
+     */
+    fun sendPhoneCode(phone: String, preferWhatsApp: Boolean = true, callback: (Result) -> Unit) {
+        val clean = phone.trim().replace(" ", "")
         if (!clean.startsWith("+") || clean.length < 8) {
             callback(Result(false, "Enter your full phone number with country code, e.g. +880…"))
             return
         }
         async(callback) {
-            val response = authRequest("/auth/v1/otp", JSONObject().put("phone", clean))
-            if (response.code in 200..299) Result(true, "Code sent")
-            else Result(false, response.errorMessage("Could not send verification code."))
+            if (preferWhatsApp) {
+                val whatsapp = authRequest(
+                    "/auth/v1/otp",
+                    JSONObject().put("phone", clean).put("channel", "whatsapp")
+                )
+                if (whatsapp.code in 200..299) {
+                    return@async Result(true, "Verification code sent on WhatsApp")
+                }
+
+                // Immediate provider/configuration failures are safe to retry by SMS.
+                val sms = authRequest("/auth/v1/otp", JSONObject().put("phone", clean))
+                if (sms.code in 200..299) {
+                    Result(true, "WhatsApp was unavailable, so TOCO sent the code by SMS")
+                } else {
+                    Result(false, sms.errorMessage(whatsapp.errorMessage("Could not send a verification code.")))
+                }
+            } else {
+                val sms = authRequest("/auth/v1/otp", JSONObject().put("phone", clean))
+                if (sms.code in 200..299) Result(true, "Verification code sent by SMS")
+                else Result(false, sms.errorMessage("Could not send an SMS verification code."))
+            }
         }
     }
 

@@ -163,6 +163,23 @@ class HomeFragment : Fragment() {
             }
         }
 
+        // A few guaranteed local commands make the agent discoverable without
+        // turning the home screen into a manual. They use the exact same
+        // dispatch path as typed/voice input, so these are real actions rather
+        // than demo buttons.
+        val quickCommands = mapOf(
+            R.id.quickOpenYoutube to "open YouTube",
+            R.id.quickFlashlight to "flashlight on",
+            R.id.quickBattery to "battery",
+            R.id.quickTimer to "set timer for 5 minutes",
+            R.id.quickHelp to "show commands"
+        )
+        quickCommands.forEach { (id, command) ->
+            requireView().findViewById<View>(id).setOnClickListener {
+                if (Taps.allow("quick_$id")) dispatch(command)
+            }
+        }
+
         etCommand.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) {
                 if (Taps.allow("send")) submitTyped()

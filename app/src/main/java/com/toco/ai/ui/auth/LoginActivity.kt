@@ -30,6 +30,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private lateinit var phoneCode: EditText
     private lateinit var verifyPhone: View
+    private lateinit var smsFallback: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +42,7 @@ class LoginActivity : AppCompatActivity() {
         progress = findViewById(R.id.loginProgress)
         phoneCode = findViewById(R.id.phoneCode)
         verifyPhone = findViewById(R.id.verifyPhone)
+        smsFallback = findViewById(R.id.smsFallback)
 
         val title = findViewById<TextView>(R.id.authTitle)
         val subtitle = findViewById<TextView>(R.id.authSubtitle)
@@ -99,8 +101,20 @@ class LoginActivity : AppCompatActivity() {
 
         val phone = findViewById<EditText>(R.id.phoneNumber)
         findViewById<View>(R.id.sendPhoneCode).setOnClickListener {
-            loading(true, "Sending verification code…")
-            auth.sendPhoneCode(phone.text.toString()) { result ->
+            loading(true, "Sending securely…")
+            auth.sendPhoneCode(phone.text.toString(), preferWhatsApp = true) { result ->
+                loading(false, result.message)
+                if (result.ok) {
+                    phoneCode.visibility = View.VISIBLE
+                    verifyPhone.visibility = View.VISIBLE
+                    smsFallback.visibility = View.VISIBLE
+                    phoneCode.requestFocus()
+                }
+            }
+        }
+        smsFallback.setOnClickListener {
+            loading(true, "Sending by SMS…")
+            auth.sendPhoneCode(phone.text.toString(), preferWhatsApp = false) { result ->
                 loading(false, result.message)
                 if (result.ok) {
                     phoneCode.visibility = View.VISIBLE

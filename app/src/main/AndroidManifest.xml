@@ -33,6 +33,7 @@
     <!-- Speaker, microphone mute and Bluetooth routing during a call.
          Normal-level: granted at install, no prompt. -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <!-- Background wake-word listening. MICROPHONE subtype is mandatory from
          Android 14; without it startForeground throws. -->

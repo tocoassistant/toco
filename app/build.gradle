@@ -12,7 +12,13 @@ if (localFile.exists()) {
 }
 def geminiKey = localProps.getProperty("GEMINI_API_KEY", System.getenv("GEMINI_API_KEY") ?: "")
 def groqKey = localProps.getProperty("GROQ_API_KEY", System.getenv("GROQ_API_KEY") ?: "")
-def googleWebClientId = localProps.getProperty("GOOGLE_WEB_CLIENT_ID", System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "")
+// Google OAuth client IDs are public identifiers, not secrets. CI/local overrides
+// still win, but keeping the production Web client ID as a fallback prevents a
+// perfectly valid APK from silently shipping with Google sign-in disabled.
+def googleWebClientId = localProps.getProperty(
+    "GOOGLE_WEB_CLIENT_ID",
+    System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "686211836517-p4thhoq74e4urfdutgeqsmv702f1trqd.apps.googleusercontent.com"
+)
 
 // Escape values before embedding them in generated BuildConfig.java.
 def quoteForBuildConfig = { value ->
@@ -28,8 +34,8 @@ android {
         applicationId "com.toco.ai"
         minSdk 24
         targetSdk 34
-        versionCode 7
-        versionName "0.1.7-beta"
+        versionCode 12
+        versionName "0.1.12-beta"
 
         buildConfigField "String", "GEMINI_API_KEY", quoteForBuildConfig(geminiKey)
         buildConfigField "String", "GROQ_API_KEY", quoteForBuildConfig(groqKey)
@@ -43,6 +49,20 @@ android {
         buildConfig true
     }
 
+    // CI supplies the permanent TOCO signing key through GitHub Actions secrets.
+    // No keystore or password is committed to the repository.
+    signingConfigs {
+        tocoRelease {
+            def keyFile = System.getenv("TOCO_KEYSTORE_FILE")
+            if (keyFile) {
+                storeFile file(keyFile)
+                storePassword System.getenv("TOCO_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("TOCO_KEY_ALIAS")
+                keyPassword System.getenv("TOCO_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             minifyEnabled false
@@ -50,6 +70,7 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
+            signingConfig signingConfigs.tocoRelease
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
