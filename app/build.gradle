@@ -34,8 +34,8 @@ android {
         applicationId "com.toco.ai"
         minSdk 24
         targetSdk 34
-        versionCode 12
-        versionName "0.1.12-beta"
+        versionCode 13
+        versionName "0.1.13-beta"
 
         buildConfigField "String", "GEMINI_API_KEY", quoteForBuildConfig(geminiKey)
         buildConfigField "String", "GROQ_API_KEY", quoteForBuildConfig(groqKey)
