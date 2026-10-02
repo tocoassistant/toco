@@ -10,10 +10,8 @@ import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import com.toco.ai.R
 import com.toco.ai.core.Prefs
-import com.toco.ai.core.AuthManager
 import com.toco.ai.ui.MainActivity
 import com.toco.ai.ui.onboarding.OnboardingActivity
-import com.toco.ai.ui.auth.LoginActivity
 
 class SplashActivity : AppCompatActivity() {
 
@@ -34,7 +32,6 @@ class SplashActivity : AppCompatActivity() {
         logo.alpha = 0f
         logo.scaleX = 0.3f
         logo.scaleY = 0.3f
-
         glow.alpha = 0f
         glow.scaleX = 0.5f
         glow.scaleY = 0.5f
@@ -62,10 +59,8 @@ class SplashActivity : AppCompatActivity() {
 
     private fun goHome() {
         if (isFinishing || isDestroyed) return
-        // Beta 1.5 gates the app behind a real Supabase account first.
-        val next = if (!AuthManager(this).isSignedIn) {
-            LoginActivity::class.java
-        } else if (Prefs(this).onboardingDone) {
+        // Beta 1.15: authentication is optional. Never block local TOCO use.
+        val next = if (Prefs(this).onboardingDone) {
             MainActivity::class.java
         } else {
             OnboardingActivity::class.java
