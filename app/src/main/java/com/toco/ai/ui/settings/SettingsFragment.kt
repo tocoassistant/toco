@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +24,8 @@ import com.toco.ai.core.Voice
 import com.toco.ai.call.MissedCallOverlay
 import com.toco.ai.call.MissedCallReader
 import com.toco.ai.service.WakeWordService
+import com.toco.ai.island.IslandService
+import com.toco.ai.call.OverlayPermissionNotice
 import com.toco.ai.util.Permissions
 import com.toco.ai.util.Taps
 
@@ -81,6 +85,15 @@ class SettingsFragment : Fragment() {
         renderToggles(view)
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::prefs.isInitialized && prefs.islandEnabled &&
+            (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(requireContext()))) {
+            IslandService.start(requireContext())
+            view?.let { renderToggles(it) }
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         // Save on leaving, so an edit isn't lost by switching tabs.
@@ -111,6 +124,31 @@ class SettingsFragment : Fragment() {
         val list = root.findViewById<LinearLayout>(R.id.toggleList)
         val inflater = LayoutInflater.from(requireContext())
         list.removeAllViews()
+
+        addToggle(
+            list, inflater,
+            label = getString(R.string.island_toggle),
+            description = getString(R.string.island_toggle_desc),
+            on = prefs.islandEnabled
+        ) {
+            if (prefs.islandEnabled) {
+                prefs.islandEnabled = false
+                IslandService.stop(requireContext())
+                renderToggles(root)
+            } else {
+                prefs.islandEnabled = true
+                if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(requireContext())) {
+                    IslandService.start(requireContext())
+                    renderToggles(root)
+                } else {
+                    OverlayPermissionNotice.post(requireContext())
+                    startActivity(
+                        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                            .setData(Uri.parse("package:" + requireContext().packageName))
+                    )
+                }
+            }
+        }
 
         addToggle(
             list, inflater,

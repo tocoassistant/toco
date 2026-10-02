@@ -39,6 +39,7 @@
          Android 14; without it startForeground throws. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Only to bring wake-word listening back after a reboot, if the user
          had it on. Nothing is started on boot otherwise. -->
@@ -102,6 +103,15 @@
             android:name=".ui.MainActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <service
+            android:name=".island.IslandService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Persistent user-enabled TOCO Island overlay" />
+        </service>
 
         <service
             android:name=".service.WakeWordService"

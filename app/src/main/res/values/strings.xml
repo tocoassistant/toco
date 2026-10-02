@@ -164,4 +164,15 @@ Some phones put this under Settings → Additional settings → Gestures. TOCO m
     <string name="profile_activity_desc">Actions TOCO performed on your device and connected accounts.</string>
     <string name="history_empty">No saved history yet. Quick commands are intentionally not saved.</string>
     <string name="activity_empty">No agent activity recorded yet.</string>
+
+    <string name="island_toggle">TOCO Island</string>
+    <string name="island_toggle_desc">Keep a small TOCO pill at the top of the screen. Tap it to expand.</string>
+    <string name="island_channel">TOCO Island</string>
+    <string name="island_notification_title">TOCO Island is active</string>
+    <string name="island_notification_text">Your floating TOCO pill is ready.</string>
+    <string name="island_stop">Stop</string>
+    <string name="island_orb_desc">TOCO mascot</string>
+    <string name="island_compact_label">TOCO</string>
+    <string name="island_ready_title">TOCO Island</string>
+    <string name="island_phase_one_hint">Island foundation is ready. Chat, agent pills and cards arrive in later phases.</string>
 </resources>

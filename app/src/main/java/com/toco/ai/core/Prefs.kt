@@ -26,6 +26,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_VOICE, true)
         set(value) = sp.edit().putBoolean(KEY_VOICE, value).apply()
 
+    /** Persistent TOCO Island overlay. Off until the user explicitly enables it. */
+    var islandEnabled: Boolean
+        get() = sp.getBoolean(KEY_ISLAND, false)
+        set(value) = sp.edit().putBoolean(KEY_ISLAND, value).apply()
+
     /** Background wake-word listening. Off by default — it costs battery. */
     var wakeEnabled: Boolean
         get() = sp.getBoolean(KEY_WAKE, false)
@@ -118,6 +123,7 @@ class Prefs(context: Context) {
         const val KEY_VOICE = "voice_replies"
         const val KEY_VOICE_ID = "voice_id"
         const val KEY_WAKE = "wake_enabled"
+        const val KEY_ISLAND = "island_enabled"
         const val KEY_WAKE_WORDS = "wake_words"
         const val DEFAULT_WAKE = "hey toco, toco, hi toco, assistant, ok toco"
         const val KEY_MISSED = "missed_call_alerts"
